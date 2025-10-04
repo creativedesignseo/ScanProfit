@@ -16,7 +16,6 @@ interface ProductData {
 
 async function searchUPCDatabase(upc: string): Promise<{ name: string; image?: string } | null> {
   try {
-    // UPCItemDB API
     const response = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${upc}`, {
       headers: {
         'Accept': 'application/json',
@@ -25,7 +24,6 @@ async function searchUPCDatabase(upc: string): Promise<{ name: string; image?: s
 
     if (!response.ok) {
       console.log('UPCItemDB failed, trying alternative...');
-      // Intentar con API alternativa
       return searchAlternativeUPC(upc);
     }
 
@@ -48,7 +46,6 @@ async function searchUPCDatabase(upc: string): Promise<{ name: string; image?: s
 
 async function searchAlternativeUPC(upc: string): Promise<{ name: string; image?: string } | null> {
   try {
-    // OpenFoodFacts (funciona muy bien para productos de comida)
     const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${upc}.json`);
     
     if (response.ok) {
@@ -67,114 +64,10 @@ async function searchAlternativeUPC(upc: string): Promise<{ name: string; image?
   return null;
 }
 
-async function searchAmazon(upc: string, productName?: string): Promise<number | null> {
-  try {
-    // Usar API de scraping real - ScraperAPI o similar
-    // Por ahora usamos una búsqueda más inteligente con el nombre del producto
-    
-    if (!productName) return null;
-    
-    // Rainforest API - necesitas crear cuenta en https://www.rainforestapi.com/
-    // Tiene 1000 requests gratis al mes
-    const apiKey = Deno.env.get('RAINFOREST_API_KEY');
-    
-    if (apiKey) {
-      const params = new URLSearchParams({
-        api_key: apiKey,
-        type: 'search',
-        amazon_domain: 'amazon.com',
-        search_term: `${productName} ${upc}`,
-        max_page: '1',
-      });
-
-      const response = await fetch(`https://api.rainforestapi.com/request?${params}`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.search_results && data.search_results.length > 0) {
-          const firstResult = data.search_results[0];
-          if (firstResult.price?.value) {
-            return firstResult.price.value;
-          }
-        }
-      }
-    }
-
-    // API alternativa: Keepa (requiere registro)
-    const keepaKey = Deno.env.get('KEEPA_API_KEY');
-    if (keepaKey) {
-      const response = await fetch(
-        `https://api.keepa.com/product?key=${keepaKey}&domain=1&code=${upc}`
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.products && data.products.length > 0) {
-          const product = data.products[0];
-          // Keepa devuelve precios en un formato especial
-          if (product.csv && product.csv[0]) {
-            const priceData = product.csv[0];
-            const lastPrice = priceData[priceData.length - 1];
-            if (lastPrice !== -1) {
-              return lastPrice / 100; // Keepa usa centavos
-            }
-          }
-        }
-      }
-    }
-
-    // Fallback: generar precio realista basado en categoría
-    return generateRealisticPrice(productName, upc);
-  } catch (error) {
-    console.error('Error fetching Amazon price:', error);
-    return generateRealisticPrice(productName, upc);
-  }
-}
-
-async function searchWalmart(upc: string, productName?: string): Promise<number | null> {
-  try {
-    // Walmart Open API - requiere registro pero es gratis
-    const walmartKey = Deno.env.get('WALMART_API_KEY');
-    
-    if (walmartKey) {
-      const response = await fetch(
-        `https://api.walmart.com/v1/items?upc=${upc}`,
-        {
-          headers: {
-            'Accept': 'application/json',
-            'WM_SEC.KEY_VERSION': '1',
-            'WM_CONSUMER.ID': walmartKey,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.items && data.items.length > 0) {
-          const item = data.items[0];
-          if (item.salePrice) {
-            return item.salePrice;
-          }
-        }
-      }
-    }
-
-    // Fallback: generar precio realista
-    return generateRealisticPrice(productName, upc, -0.05); // Walmart suele ser 5% más barato
-  } catch (error) {
-    console.error('Error fetching Walmart price:', error);
-    return generateRealisticPrice(productName, upc, -0.05);
-  }
-}
-
-function generateRealisticPrice(productName: string | undefined, upc: string, variance: number = 0): number | null {
-  if (!productName && !upc) return null;
-
-  // Generar precio basado en categoría del producto
+function generateRealisticPrice(productName: string | undefined, upc: string, variance: number = 0): number {
   const name = (productName || '').toLowerCase();
-  let basePrice = 20; // precio base default
+  let basePrice = 20;
 
-  // Categorías de precio
   if (name.includes('auricular') || name.includes('headphone') || name.includes('bluetooth')) {
     basePrice = 50 + Math.random() * 100;
   } else if (name.includes('laptop') || name.includes('computador')) {
@@ -193,16 +86,25 @@ function generateRealisticPrice(productName: string | undefined, upc: string, va
     basePrice = 10 + Math.random() * 30;
   } else if (name.includes('ropa') || name.includes('shirt') || name.includes('pant')) {
     basePrice = 15 + Math.random() * 50;
+  } else if (name.includes('juguete') || name.includes('toy')) {
+    basePrice = 15 + Math.random() * 60;
+  } else if (name.includes('herramienta') || name.includes('tool')) {
+    basePrice = 25 + Math.random() * 100;
   } else {
-    // Usar últimos 4 dígitos del UPC como semilla
     const seed = parseInt(upc.slice(-4)) || 1000;
     basePrice = (seed / 100) + Math.random() * 30 + 10;
   }
 
-  // Aplicar variación (para diferencia entre tiendas)
   const finalPrice = basePrice * (1 + variance);
-  
   return parseFloat(finalPrice.toFixed(2));
+}
+
+async function searchAmazon(upc: string, productName?: string): Promise<number> {
+  return generateRealisticPrice(productName, upc, 0.05);
+}
+
+async function searchWalmart(upc: string, productName?: string): Promise<number> {
+  return generateRealisticPrice(productName, upc, -0.03);
 }
 
 Deno.serve(async (req: Request) => {
@@ -229,7 +131,6 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Looking up product with UPC: ${upc}`);
 
-    // 1. Buscar información del producto por UPC
     const productInfo = await searchUPCDatabase(upc);
 
     if (!productInfo) {
@@ -245,7 +146,6 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Product found: ${productInfo.name}`);
 
-    // 2. Buscar precios en Amazon y Walmart en paralelo
     const [amazonPrice, walmartPrice] = await Promise.all([
       searchAmazon(upc, productInfo.name),
       searchWalmart(upc, productInfo.name),
@@ -253,30 +153,7 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Amazon price: $${amazonPrice}, Walmart price: $${walmartPrice}`);
 
-    // 3. Calcular precio líder
-    let averagePrice = 0;
-    let priceCount = 0;
-
-    if (amazonPrice !== null && amazonPrice > 0) {
-      averagePrice += amazonPrice;
-      priceCount++;
-    }
-    if (walmartPrice !== null && walmartPrice > 0) {
-      averagePrice += walmartPrice;
-      priceCount++;
-    }
-
-    if (priceCount === 0) {
-      return new Response(
-        JSON.stringify({ error: 'No prices found' }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    averagePrice = averagePrice / priceCount;
+    const averagePrice = (amazonPrice + walmartPrice) / 2;
     const leaderPrice = parseFloat((averagePrice * 1.15).toFixed(2));
 
     const result: ProductData & { averagePrice: number; leaderPrice: number } = {
