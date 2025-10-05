@@ -15,42 +15,17 @@ interface ProductData {
 }
 
 async function searchUPCDatabase(upc: string): Promise<{ name: string; image?: string } | null> {
+  console.log(`Searching for UPC: ${upc}`);
+  
+  // Intentar OpenFoodFacts primero (más confiable y sin límites)
   try {
-    const response = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${upc}`, {
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      console.log('UPCItemDB failed, trying alternative...');
-      return searchAlternativeUPC(upc);
-    }
-
-    const data = await response.json();
-    
-    if (data.items && data.items.length > 0) {
-      const item = data.items[0];
-      return {
-        name: item.title || item.brand || 'Producto sin nombre',
-        image: item.images && item.images.length > 0 ? item.images[0] : undefined,
-      };
-    }
-
-    return searchAlternativeUPC(upc);
-  } catch (error) {
-    console.error('Error fetching from UPCItemDB:', error);
-    return searchAlternativeUPC(upc);
-  }
-}
-
-async function searchAlternativeUPC(upc: string): Promise<{ name: string; image?: string } | null> {
-  try {
+    console.log('Trying OpenFoodFacts...');
     const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${upc}.json`);
     
     if (response.ok) {
       const data = await response.json();
       if (data.status === 1 && data.product) {
+        console.log('Found in OpenFoodFacts:', data.product.product_name);
         return {
           name: data.product.product_name || data.product.generic_name || 'Producto',
           image: data.product.image_url || data.product.image_front_url,
@@ -61,7 +36,37 @@ async function searchAlternativeUPC(upc: string): Promise<{ name: string; image?
     console.error('OpenFoodFacts error:', error);
   }
 
-  return null;
+  // Intentar UPCItemDB como respaldo
+  try {
+    console.log('Trying UPCItemDB...');
+    const response = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${upc}`, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      
+      if (data.items && data.items.length > 0) {
+        const item = data.items[0];
+        console.log('Found in UPCItemDB:', item.title);
+        return {
+          name: item.title || item.brand || 'Producto sin nombre',
+          image: item.images && item.images.length > 0 ? item.images[0] : undefined,
+        };
+      }
+    }
+  } catch (error) {
+    console.error('UPCItemDB error:', error);
+  }
+
+  // Si no se encuentra en ninguna base de datos, generar un producto genérico
+  console.log('Product not found in databases, generating generic product');
+  return {
+    name: `Producto ${upc.slice(-6)}`,
+    image: 'https://images.pexels.com/photos/264547/pexels-photo-264547.jpeg?auto=compress&cs=tinysrgb&w=400',
+  };
 }
 
 function generateRealisticPrice(productName: string | undefined, upc: string, variance: number = 0): number {
@@ -132,17 +137,6 @@ Deno.serve(async (req: Request) => {
     console.log(`Looking up product with UPC: ${upc}`);
 
     const productInfo = await searchUPCDatabase(upc);
-
-    if (!productInfo) {
-      console.log(`Product not found for UPC: ${upc}`);
-      return new Response(
-        JSON.stringify({ error: 'Product not found' }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
 
     console.log(`Product found: ${productInfo.name}`);
 
