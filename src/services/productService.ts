@@ -23,17 +23,19 @@ export async function fetchProductData(upc: string): Promise<Product | null> {
 
     const data = await response.json();
 
-    // Asegurar que los precios existan
-    const amazonPrice = data.amazonPrice ?? 0;
-    const walmartPrice = data.walmartPrice ?? 0;
-
     return {
       upc: data.upc,
-      name: data.name,
-      amazonPrice,
-      walmartPrice,
-      averagePrice: data.averagePrice,
+      nombre: data.nombre,
+      name: data.nombre,
+      precioAmazon: data.precioAmazon,
+      amazonPrice: data.precioAmazon,
+      precioWalmart: data.precioWalmart,
+      walmartPrice: data.precioWalmart,
+      precioPromedio: data.precioPromedio,
+      averagePrice: data.precioPromedio,
       leaderPrice: data.leaderPrice,
+      descripcion: data.descripcion,
+      fichaTecnica: data.fichaTecnica,
       image: data.image,
     };
   } catch (error) {

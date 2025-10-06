@@ -6,19 +6,29 @@ export function exportToCSV(products: Product[]): void {
   const headers = [
     'Nombre del Producto',
     'UPC/EAN',
+    'Marca',
+    'Categoria',
+    'Peso',
+    'Origen',
+    'Descripcion',
     'Precio Amazon',
     'Precio Walmart',
-    'Precio LIDER Sugerido',
-    'Precio Promedio Calculado'
+    'Precio Promedio',
+    'Precio LIDER Sugerido'
   ];
 
   const csvData = products.map(p => [
-    `"${p.name.replace(/"/g, '""')}"`,
+    `"${(p.nombre || p.name || '').replace(/"/g, '""')}"`,
     p.upc,
-    p.amazonPrice.toFixed(2),
-    p.walmartPrice.toFixed(2),
-    p.leaderPrice.toFixed(2),
-    p.averagePrice.toFixed(2)
+    `"${(p.fichaTecnica?.marca || 'N/A').replace(/"/g, '""')}"`,
+    `"${(p.fichaTecnica?.categoria || 'N/A').replace(/"/g, '""')}"`,
+    `"${(p.fichaTecnica?.peso || 'N/A').replace(/"/g, '""')}"`,
+    `"${(p.fichaTecnica?.origen || 'N/A').replace(/"/g, '""')}"`,
+    `"${(p.descripcion || '').replace(/"/g, '""')}"`,
+    (p.precioAmazon || p.amazonPrice || 0).toFixed(2),
+    (p.precioWalmart || p.walmartPrice || 0).toFixed(2),
+    (p.precioPromedio || p.averagePrice || 0).toFixed(2),
+    p.leaderPrice.toFixed(2)
   ]);
 
   let csvContent = headers.join(';') + '\n';
