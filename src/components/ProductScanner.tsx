@@ -72,11 +72,11 @@ export function ProductScanner({ onScan, isLoading }: ProductScannerProps) {
 
       <button
         type="button"
-        className="mt-4 w-full flex items-center justify-center border-2 border-dashed border-orange-300 bg-orange-50 p-4 sm:p-5 rounded-lg hover:bg-orange-100 cursor-pointer transition-all active:scale-98"
+        className="mt-4 w-full flex items-center justify-center border-2 border-dashed border-orange-300 bg-orange-50 p-6 sm:p-8 rounded-lg hover:bg-orange-100 cursor-pointer transition-all active:scale-98"
         onClick={() => setShowCamera(true)}
       >
-        <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 mr-2" />
-        <span className="text-orange-700 font-semibold text-sm sm:text-base">Escanear con Cámara</span>
+        <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-orange-600 mr-3" />
+        <span className="text-orange-700 font-semibold text-base sm:text-lg">Escanear con Cámara</span>
       </button>
 
       {isLoading && (

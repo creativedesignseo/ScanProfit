@@ -45,27 +45,17 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           </div>
         )}
 
-        <div className="text-center p-3 sm:p-4 bg-green-50 border-2 border-green-300 rounded-lg">
-          <p className="text-xs sm:text-sm font-semibold text-green-700 mb-1">Amazon</p>
-          <p className="text-2xl sm:text-3xl font-bold text-green-700">${(product.precioAmazon || product.amazonPrice || 0).toFixed(2)}</p>
-        </div>
-
-        <div className="text-center p-3 sm:p-4 bg-blue-50 border-2 border-blue-300 rounded-lg">
-          <p className="text-xs sm:text-sm font-semibold text-blue-700 mb-1">Walmart</p>
-          <p className="text-2xl sm:text-3xl font-bold text-blue-700">${(product.precioWalmart || product.walmartPrice || 0).toFixed(2)}</p>
-        </div>
-
-        <div className="text-center p-3 sm:p-4 bg-slate-50 border-2 border-slate-300 rounded-lg">
-          <div className="flex items-center justify-center mb-1">
-            <TrendingUp className="w-4 h-4 text-slate-700 mr-1" />
-            <p className="text-xs sm:text-sm font-semibold text-slate-700">Precio Promedio</p>
+        <div className="text-center p-4 sm:p-5 bg-blue-50 border-2 border-blue-300 rounded-lg col-span-1 lg:col-span-1">
+          <div className="flex items-center justify-center mb-2">
+            <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700 mr-1" />
+            <p className="text-xs sm:text-sm font-semibold text-blue-700">Precio del Producto</p>
           </div>
-          <p className="text-2xl sm:text-3xl font-bold text-slate-700">${(product.precioPromedio || product.averagePrice || 0).toFixed(2)}</p>
+          <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-blue-700">${product.precio.toFixed(2)}</p>
         </div>
 
         <div className="text-center p-4 sm:p-5 bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-400 rounded-lg col-span-1 lg:col-span-1 shadow-sm">
           <div className="flex items-center justify-center mb-2">
-            <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-orange-700 mr-1" />
+            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-orange-700 mr-1" />
             <p className="text-xs sm:text-sm font-semibold text-orange-700">Precio LÍDER (Reventa)</p>
           </div>
           <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-orange-700">${product.leaderPrice.toFixed(2)}</p>

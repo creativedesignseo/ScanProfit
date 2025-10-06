@@ -35,14 +35,10 @@ export function ProductTable({ products, onRemove }: ProductTableProps) {
                 <Trash2 className="w-5 h-5" />
               </button>
             </div>
-            <div className="grid grid-cols-3 gap-2 mt-3">
-              <div className="text-center">
-                <p className="text-xs text-slate-600 mb-0.5">Amazon</p>
-                <p className="text-sm font-bold text-green-600">${(product.precioAmazon || product.amazonPrice || 0).toFixed(2)}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-slate-600 mb-0.5">Walmart</p>
-                <p className="text-sm font-bold text-blue-600">${(product.precioWalmart || product.walmartPrice || 0).toFixed(2)}</p>
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <div className="text-center bg-blue-50 rounded p-1">
+                <p className="text-xs text-blue-700 font-semibold mb-0.5">Precio</p>
+                <p className="text-sm font-bold text-blue-700">${product.precio.toFixed(2)}</p>
               </div>
               <div className="text-center bg-orange-50 rounded p-1">
                 <p className="text-xs text-orange-700 font-semibold mb-0.5">LÍDER</p>
@@ -65,10 +61,7 @@ export function ProductTable({ products, onRemove }: ProductTableProps) {
                 UPC/EAN
               </th>
               <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                Amazon
-              </th>
-              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                Walmart
+                Precio
               </th>
               <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                 Precio LÍDER
@@ -88,13 +81,8 @@ export function ProductTable({ products, onRemove }: ProductTableProps) {
                   <div className="text-sm text-slate-600">{product.upc}</div>
                 </td>
                 <td className="px-3 py-3 whitespace-nowrap">
-                  <div className="text-sm font-semibold text-green-600">
-                    ${(product.precioAmazon || product.amazonPrice || 0).toFixed(2)}
-                  </div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap">
                   <div className="text-sm font-semibold text-blue-600">
-                    ${(product.precioWalmart || product.walmartPrice || 0).toFixed(2)}
+                    ${product.precio.toFixed(2)}
                   </div>
                 </td>
                 <td className="px-3 py-3 whitespace-nowrap">
@@ -105,7 +93,7 @@ export function ProductTable({ products, onRemove }: ProductTableProps) {
                 <td className="px-3 py-3 whitespace-nowrap text-right">
                   <button
                     onClick={() => onRemove(index)}
-                    className="text-red-600 hover:text-red-800 transition-colors inline-flex items-center active:scale-95"
+                    className="text-red-600 hover:text-red-800 transition-colors inline-flex items-center active-scale-95"
                   >
                     <Trash2 className="w-4 h-4 mr-1" />
                     <span className="text-sm font-medium hidden md:inline">Eliminar</span>
