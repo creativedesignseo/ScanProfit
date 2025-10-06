@@ -63,20 +63,20 @@ export function ProductScanner({ onScan, isLoading }: ProductScannerProps) {
         <button
           type="submit"
           disabled={isLoading}
-          className="bg-gradient-to-r from-orange-500 to-amber-600 text-white px-6 py-3 sm:py-3.5 rounded-lg font-semibold hover:from-orange-600 hover:to-amber-700 transition-all duration-200 w-full sm:w-auto flex items-center justify-center shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+          className="bg-gradient-to-r from-orange-500 to-amber-600 text-white px-8 py-4 sm:px-10 sm:py-5 rounded-lg font-semibold hover:from-orange-600 hover:to-amber-700 transition-all duration-200 w-full sm:w-auto flex items-center justify-center shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
         >
-          <Search className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-          <span className="text-sm sm:text-base">Buscar</span>
+          <Search className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
+          <span className="text-base sm:text-lg">Buscar</span>
         </button>
       </form>
 
       <button
         type="button"
-        className="mt-4 w-full flex items-center justify-center border-2 border-dashed border-orange-300 bg-orange-50 p-4 sm:p-5 rounded-lg hover:bg-orange-100 cursor-pointer transition-all active:scale-98"
+        className="mt-4 w-full flex items-center justify-center border-2 border-dashed border-orange-300 bg-orange-50 p-5 sm:p-6 rounded-lg hover:bg-orange-100 cursor-pointer transition-all active:scale-98"
         onClick={() => setShowCamera(true)}
       >
-        <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600 mr-2" />
-        <span className="text-orange-700 font-semibold text-sm sm:text-base">Escanear con Cámara</span>
+        <Camera className="w-6 h-6 sm:w-7 sm:h-7 text-orange-600 mr-2" />
+        <span className="text-orange-700 font-semibold text-base sm:text-lg">Escanear con Cámara</span>
       </button>
 
       {isLoading && (

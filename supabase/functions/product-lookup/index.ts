@@ -10,9 +10,7 @@ const corsHeaders = {
 interface ProductData {
   upc: string;
   nombre: string;
-  precioAmazon: number;
-  precioWalmart: number;
-  precioPromedio: number;
+  precio: number;
   descripcion: string;
   fichaTecnica: {
     marca: string;
@@ -25,29 +23,9 @@ interface ProductData {
   leaderPrice: number;
 }
 
-async function searchUPCDatabase(upc: string): Promise<{ name: string; category?: string; brand?: string; image?: string } | null> {
+async function searchUPCDatabase(upc: string): Promise<{ name: string; category?: string; brand?: string; image?: string; price?: number } | null> {
   console.log(`Searching for UPC: ${upc}`);
   
-  try {
-    console.log('Trying OpenFoodFacts...');
-    const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${upc}.json`);
-    
-    if (response.ok) {
-      const data = await response.json();
-      if (data.status === 1 && data.product) {
-        console.log('Found in OpenFoodFacts:', data.product.product_name);
-        return {
-          name: data.product.product_name || data.product.generic_name || 'Producto',
-          category: data.product.categories || '',
-          brand: data.product.brands || '',
-          image: data.product.image_url || data.product.image_front_url,
-        };
-      }
-    }
-  } catch (error) {
-    console.error('OpenFoodFacts error:', error);
-  }
-
   try {
     console.log('Trying UPCItemDB...');
     const response = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${upc}`, {
@@ -62,11 +40,23 @@ async function searchUPCDatabase(upc: string): Promise<{ name: string; category?
       if (data.items && data.items.length > 0) {
         const item = data.items[0];
         console.log('Found in UPCItemDB:', item.title);
+        
+        // Extract price from UPCItemDB - try multiple fields
+        let price: number | undefined;
+        if (item.lowest_recorded_price) {
+          price = parseFloat(item.lowest_recorded_price);
+        } else if (item.msrp) {
+          price = parseFloat(item.msrp);
+        } else if (item.highest_recorded_price) {
+          price = parseFloat(item.highest_recorded_price);
+        }
+        
         return {
           name: item.title || item.brand || 'Producto sin nombre',
           category: item.category || '',
           brand: item.brand || '',
           image: item.images && item.images.length > 0 ? item.images[0] : undefined,
+          price: price && !isNaN(price) ? price : undefined,
         };
       }
     }
@@ -74,16 +64,18 @@ async function searchUPCDatabase(upc: string): Promise<{ name: string; category?
     console.error('UPCItemDB error:', error);
   }
 
-  console.log('Product not found in databases, generating generic product');
+  console.log('Product not found in UPCItemDB, generating generic product');
   return {
     name: `Producto ${upc.slice(-6)}`,
     category: 'General',
     brand: 'Desconocida',
     image: 'https://images.pexels.com/photos/264547/pexels-photo-264547.jpeg?auto=compress&cs=tinysrgb&w=400',
+    price: undefined,
   };
 }
 
-function generateRealisticPrice(productName: string | undefined, upc: string, variance: number = 0): number {
+function generateFallbackPrice(productName: string | undefined, upc: string): number {
+  // Generate a fallback price if UPCItemDB doesn't provide one
   const name = (productName || '').toLowerCase();
   let basePrice = 20;
 
@@ -114,22 +106,18 @@ function generateRealisticPrice(productName: string | undefined, upc: string, va
     basePrice = (seed / 100) + Math.random() * 30 + 10;
   }
 
-  const finalPrice = basePrice * (1 + variance);
-  return parseFloat(finalPrice.toFixed(2));
+  return parseFloat(basePrice.toFixed(2));
 }
 
 async function generarFichaProducto(
   nombre: string,
   categoria: string,
   marca: string,
-  precioAmazon: number,
-  precioWalmart: number,
+  precio: number,
   upc: string
 ): Promise<{
   nombre: string;
-  precioAmazon: number;
-  precioWalmart: number;
-  precioPromedio: number;
+  precio: number;
   descripcion: string;
   fichaTecnica: {
     marca: string;
@@ -144,25 +132,19 @@ async function generarFichaProducto(
       apiKey: Deno.env.get('OPENAI_API_KEY'),
     });
 
-    const precioPromedio = parseFloat(((precioAmazon + precioWalmart) / 2).toFixed(2));
-
     const prompt = `Eres un asistente experto en productos de consumo. Dado el siguiente producto, genera una ficha completa en formato JSON.
 
 Producto:
 - Nombre: ${nombre}
 - Categoría: ${categoria}
 - Marca: ${marca}
-- Precio Amazon: $${precioAmazon}
-- Precio Walmart: $${precioWalmart}
-- Precio Promedio: $${precioPromedio}
+- Precio: $${precio}
 - Código de barras: ${upc}
 
 Genera un JSON con la siguiente estructura exacta:
 {
   "nombre": "<nombre mejorado del producto>",
-  "precioAmazon": ${precioAmazon},
-  "precioWalmart": ${precioWalmart},
-  "precioPromedio": ${precioPromedio},
+  "precio": ${precio},
   "descripcion": "<descripción detallada de 2-3 oraciones del producto, sus características y beneficios>",
   "fichaTecnica": {
     "marca": "<marca del producto>",
@@ -175,7 +157,7 @@ Genera un JSON con la siguiente estructura exacta:
 
 IMPORTANTE:
 - Responde SOLO con el JSON, sin texto adicional
-- Los precios deben ser números, no strings
+- El precio debe ser un número, no string
 - La descripción debe ser profesional y útil
 - El peso debe incluir unidad (g, kg, ml, L, oz, lb, etc.)
 - Si es un producto digital o servicio, peso puede ser "N/A"`;
@@ -196,14 +178,10 @@ IMPORTANTE:
   } catch (error) {
     console.error('Error generating product data with OpenAI:', error);
     
-    const precioPromedio = parseFloat(((precioAmazon + precioWalmart) / 2).toFixed(2));
-    
     return {
       nombre,
-      precioAmazon,
-      precioWalmart,
-      precioPromedio,
-      descripcion: `${nombre} es un producto de calidad disponible en Amazon y Walmart a precios competitivos.`,
+      precio,
+      descripcion: `${nombre} es un producto de calidad disponible en el mercado.`,
       fichaTecnica: {
         marca: marca || 'Desconocida',
         categoria: categoria || 'General',
@@ -242,28 +220,24 @@ Deno.serve(async (req: Request) => {
     const productInfo = await searchUPCDatabase(upc);
     console.log(`Product found: ${productInfo.name}`);
 
-    const amazonPrice = generateRealisticPrice(productInfo.name, upc, 0.05);
-    const walmartPrice = generateRealisticPrice(productInfo.name, upc, -0.03);
-
-    console.log(`Amazon price: $${amazonPrice}, Walmart price: $${walmartPrice}`);
+    // Use price from UPCItemDB or generate a fallback
+    const precio = productInfo.price || generateFallbackPrice(productInfo.name, upc);
+    console.log(`Price from UPCItemDB: $${precio}`);
 
     const fichaEnriquecida = await generarFichaProducto(
       productInfo.name,
       productInfo.category || 'General',
       productInfo.brand || 'Desconocida',
-      amazonPrice,
-      walmartPrice,
+      precio,
       upc
     );
 
-    const leaderPrice = parseFloat((fichaEnriquecida.precioPromedio * 1.15).toFixed(2));
+    const leaderPrice = parseFloat((fichaEnriquecida.precio * 1.15).toFixed(2));
 
     const result: ProductData = {
       upc,
       nombre: fichaEnriquecida.nombre,
-      precioAmazon: fichaEnriquecida.precioAmazon,
-      precioWalmart: fichaEnriquecida.precioWalmart,
-      precioPromedio: fichaEnriquecida.precioPromedio,
+      precio: fichaEnriquecida.precio,
       descripcion: fichaEnriquecida.descripcion,
       fichaTecnica: fichaEnriquecida.fichaTecnica,
       image: productInfo.image,

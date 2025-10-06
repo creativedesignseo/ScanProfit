@@ -2,12 +2,7 @@ export interface Product {
   upc: string;
   nombre: string;
   name?: string;
-  precioAmazon: number;
-  amazonPrice?: number;
-  precioWalmart: number;
-  walmartPrice?: number;
-  precioPromedio: number;
-  averagePrice?: number;
+  precio: number;
   leaderPrice: number;
   descripcion: string;
   fichaTecnica: {
