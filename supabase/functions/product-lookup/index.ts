@@ -118,6 +118,28 @@ function generateRealisticPrice(productName: string | undefined, upc: string, va
   return parseFloat(finalPrice.toFixed(2));
 }
 
+/**
+ * Genera una ficha de producto enriquecida usando OpenAI GPT-4o-mini
+ * 
+ * Esta función reemplaza el sistema anterior de precio promedio demo
+ * con una integración real de la API de OpenAI que genera:
+ * - Nombre mejorado del producto
+ * - Descripción profesional y detallada
+ * - Ficha técnica completa (marca, categoría, peso, origen, código de barras)
+ * - Precios validados de Amazon y Walmart
+ * - Precio promedio calculado
+ * 
+ * @param nombre - Nombre del producto obtenido de la base de datos
+ * @param categoria - Categoría del producto
+ * @param marca - Marca del producto
+ * @param precioAmazon - Precio demo de Amazon (generado algorítmicamente)
+ * @param precioWalmart - Precio demo de Walmart (generado algorítmicamente)
+ * @param upc - Código de barras UPC/EAN del producto
+ * @returns Objeto con información enriquecida del producto
+ * 
+ * @requires OPENAI_API_KEY - Variable de entorno con la API key de OpenAI
+ * @model gpt-4o-mini - Modelo de OpenAI utilizado (no existe "gpt-5-mini")
+ */
 async function generarFichaProducto(
   nombre: string,
   categoria: string,
@@ -140,6 +162,8 @@ async function generarFichaProducto(
   };
 }> {
   try {
+    // Inicializa el cliente de OpenAI con la API key del entorno
+    // La API key debe configurarse en Supabase: Project Settings → Edge Functions → Secrets
     const openai = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY'),
     });
