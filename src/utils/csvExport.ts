@@ -11,9 +11,7 @@ export function exportToCSV(products: Product[]): void {
     'Peso',
     'Origen',
     'Descripcion',
-    'Precio Amazon',
-    'Precio Walmart',
-    'Precio Promedio',
+    'Precio',
     'Precio LIDER Sugerido'
   ];
 
@@ -25,9 +23,7 @@ export function exportToCSV(products: Product[]): void {
     `"${(p.fichaTecnica?.peso || 'N/A').replace(/"/g, '""')}"`,
     `"${(p.fichaTecnica?.origen || 'N/A').replace(/"/g, '""')}"`,
     `"${(p.descripcion || '').replace(/"/g, '""')}"`,
-    (p.precioAmazon || p.amazonPrice || 0).toFixed(2),
-    (p.precioWalmart || p.walmartPrice || 0).toFixed(2),
-    (p.precioPromedio || p.averagePrice || 0).toFixed(2),
+    p.precio.toFixed(2),
     p.leaderPrice.toFixed(2)
   ]);
 
