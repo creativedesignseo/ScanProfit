@@ -37,6 +37,7 @@ export async function fetchProductData(upc: string): Promise<Product | null> {
       descripcion: data.descripcion,
       fichaTecnica: data.fichaTecnica,
       image: data.image,
+      priceMeta: data.priceMeta,
     };
   } catch (error) {
     console.error('Error fetching product data:', error);

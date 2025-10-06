@@ -2,9 +2,9 @@ export interface Product {
   upc: string;
   nombre: string;
   name?: string;
-  precioAmazon: number;
+  precioAmazon?: number;
   amazonPrice?: number;
-  precioWalmart: number;
+  precioWalmart?: number;
   walmartPrice?: number;
   precioPromedio: number;
   averagePrice?: number;
@@ -18,4 +18,8 @@ export interface Product {
     codigo_barras: string;
   };
   image?: string;
+  priceMeta?: {
+    amazon: 'upcitemdb_offer' | 'missing';
+    walmart: 'upcitemdb_offer' | 'missing';
+  };
 }
