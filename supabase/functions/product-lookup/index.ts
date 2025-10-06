@@ -1,3 +1,14 @@
+/**
+ * PRODUCT LOOKUP SERVICE
+ * 
+ * CÁLCULO DE PRECIOS:
+ * 1. precioAmazon y precioWalmart: Generados por generateRealisticPrice() basado en el producto
+ * 2. precioPromedio (PRECIO PROMEDIO REAL): Calculado en generarFichaProducto() como (Amazon + Walmart) / 2
+ * 3. leaderPrice (Precio LÍDER Reventa): Calculado como precioPromedio * 1.15 (15% markup)
+ * 
+ * NOTA IMPORTANTE: OpenAI NO calcula precios. Solo genera descripción y ficha técnica.
+ * Los precios se calculan completamente en el backend de esta función.
+ */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import OpenAI from "npm:openai@4.47.1";
 
@@ -139,30 +150,29 @@ async function generarFichaProducto(
     codigo_barras: string;
   };
 }> {
+  // Calcular el precio promedio REAL: (Amazon + Walmart) / 2
+  // Este cálculo se hace en el backend, NO por OpenAI
+  const precioPromedio = parseFloat(((precioAmazon + precioWalmart) / 2).toFixed(2));
+  console.log(`Precio promedio calculado: $${precioPromedio} (Amazon: $${precioAmazon} + Walmart: $${precioWalmart}) / 2`);
+
   try {
     const openai = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY'),
     });
 
-    const precioPromedio = parseFloat(((precioAmazon + precioWalmart) / 2).toFixed(2));
-
+    // OpenAI solo genera: nombre mejorado, descripción y ficha técnica
+    // NO calcula precios
     const prompt = `Eres un asistente experto en productos de consumo. Dado el siguiente producto, genera una ficha completa en formato JSON.
 
 Producto:
 - Nombre: ${nombre}
 - Categoría: ${categoria}
 - Marca: ${marca}
-- Precio Amazon: $${precioAmazon}
-- Precio Walmart: $${precioWalmart}
-- Precio Promedio: $${precioPromedio}
 - Código de barras: ${upc}
 
 Genera un JSON con la siguiente estructura exacta:
 {
   "nombre": "<nombre mejorado del producto>",
-  "precioAmazon": ${precioAmazon},
-  "precioWalmart": ${precioWalmart},
-  "precioPromedio": ${precioPromedio},
   "descripcion": "<descripción detallada de 2-3 oraciones del producto, sus características y beneficios>",
   "fichaTecnica": {
     "marca": "<marca del producto>",
@@ -175,7 +185,6 @@ Genera un JSON con la siguiente estructura exacta:
 
 IMPORTANTE:
 - Responde SOLO con el JSON, sin texto adicional
-- Los precios deben ser números, no strings
 - La descripción debe ser profesional y útil
 - El peso debe incluir unidad (g, kg, ml, L, oz, lb, etc.)
 - Si es un producto digital o servicio, peso puede ser "N/A"`;
@@ -192,12 +201,25 @@ IMPORTANTE:
     const cleanedResponse = responseText.replace(/```json\n?|```\n?/g, '').trim();
     const fichaProducto = JSON.parse(cleanedResponse);
 
-    return fichaProducto;
+    // Retornar con los precios calculados por el backend
+    return {
+      nombre: fichaProducto.nombre || nombre,
+      precioAmazon,
+      precioWalmart,
+      precioPromedio,
+      descripcion: fichaProducto.descripcion || `${nombre} es un producto de calidad disponible en Amazon y Walmart a precios competitivos.`,
+      fichaTecnica: fichaProducto.fichaTecnica || {
+        marca: marca || 'Desconocida',
+        categoria: categoria || 'General',
+        peso: 'N/A',
+        origen: 'Internacional',
+        codigo_barras: upc,
+      },
+    };
   } catch (error) {
     console.error('Error generating product data with OpenAI:', error);
     
-    const precioPromedio = parseFloat(((precioAmazon + precioWalmart) / 2).toFixed(2));
-    
+    // Fallback: retornar con los precios calculados por el backend
     return {
       nombre,
       precioAmazon,
@@ -256,6 +278,7 @@ Deno.serve(async (req: Request) => {
       upc
     );
 
+    // Calcular precio LÍDER (Reventa): 15% más que el precio promedio
     const leaderPrice = parseFloat((fichaEnriquecida.precioPromedio * 1.15).toFixed(2));
 
     const result: ProductData = {
