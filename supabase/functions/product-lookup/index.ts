@@ -83,47 +83,12 @@ async function searchUPCDatabase(upc: string): Promise<{ name: string; category?
   };
 }
 
-function generateRealisticPrice(productName: string | undefined, upc: string, variance: number = 0): number {
-  const name = (productName || '').toLowerCase();
-  let basePrice = 20;
 
-  if (name.includes('auricular') || name.includes('headphone') || name.includes('bluetooth')) {
-    basePrice = 50 + Math.random() * 100;
-  } else if (name.includes('laptop') || name.includes('computador')) {
-    basePrice = 400 + Math.random() * 800;
-  } else if (name.includes('phone') || name.includes('móvil') || name.includes('celular')) {
-    basePrice = 200 + Math.random() * 600;
-  } else if (name.includes('tv') || name.includes('television')) {
-    basePrice = 300 + Math.random() * 700;
-  } else if (name.includes('cuchillo') || name.includes('knife') || name.includes('sartén') || name.includes('pan')) {
-    basePrice = 30 + Math.random() * 70;
-  } else if (name.includes('café') || name.includes('coffee') || name.includes('cafetera')) {
-    basePrice = 25 + Math.random() * 50;
-  } else if (name.includes('juego') || name.includes('set') || name.includes('kit')) {
-    basePrice = 35 + Math.random() * 80;
-  } else if (name.includes('libro') || name.includes('book')) {
-    basePrice = 10 + Math.random() * 30;
-  } else if (name.includes('ropa') || name.includes('shirt') || name.includes('pant')) {
-    basePrice = 15 + Math.random() * 50;
-  } else if (name.includes('juguete') || name.includes('toy')) {
-    basePrice = 15 + Math.random() * 60;
-  } else if (name.includes('herramienta') || name.includes('tool')) {
-    basePrice = 25 + Math.random() * 100;
-  } else {
-    const seed = parseInt(upc.slice(-4)) || 1000;
-    basePrice = (seed / 100) + Math.random() * 30 + 10;
-  }
-
-  const finalPrice = basePrice * (1 + variance);
-  return parseFloat(finalPrice.toFixed(2));
-}
 
 async function generarFichaProducto(
   nombre: string,
   categoria: string,
   marca: string,
-  precioAmazon: number,
-  precioWalmart: number,
   upc: string
 ): Promise<{
   nombre: string;
@@ -144,25 +109,20 @@ async function generarFichaProducto(
       apiKey: Deno.env.get('OPENAI_API_KEY'),
     });
 
-    const precioPromedio = parseFloat(((precioAmazon + precioWalmart) / 2).toFixed(2));
-
-    const prompt = `Eres un asistente experto en productos de consumo. Dado el siguiente producto, genera una ficha completa en formato JSON.
+    const prompt = `Eres un asistente experto en productos de consumo y precios de mercado. Dado el siguiente producto, genera una ficha completa en formato JSON con precios de mercado estimados realistas.
 
 Producto:
 - Nombre: ${nombre}
 - Categoría: ${categoria}
 - Marca: ${marca}
-- Precio Amazon: $${precioAmazon}
-- Precio Walmart: $${precioWalmart}
-- Precio Promedio: $${precioPromedio}
 - Código de barras: ${upc}
 
 Genera un JSON con la siguiente estructura exacta:
 {
   "nombre": "<nombre mejorado del producto>",
-  "precioAmazon": ${precioAmazon},
-  "precioWalmart": ${precioWalmart},
-  "precioPromedio": ${precioPromedio},
+  "precioAmazon": <precio estimado realista en dólares USD en Amazon como número>,
+  "precioWalmart": <precio estimado realista en dólares USD en Walmart como número, típicamente 3-5% más barato que Amazon>,
+  "precioPromedio": <promedio de los dos precios anteriores>,
   "descripcion": "<descripción detallada de 2-3 oraciones del producto, sus características y beneficios>",
   "fichaTecnica": {
     "marca": "<marca del producto>",
@@ -175,10 +135,12 @@ Genera un JSON con la siguiente estructura exacta:
 
 IMPORTANTE:
 - Responde SOLO con el JSON, sin texto adicional
-- Los precios deben ser números, no strings
+- Los precios deben ser números realistas basados en el tipo de producto y marca
+- Walmart típicamente tiene precios 3-5% más bajos que Amazon
 - La descripción debe ser profesional y útil
 - El peso debe incluir unidad (g, kg, ml, L, oz, lb, etc.)
-- Si es un producto digital o servicio, peso puede ser "N/A"`;
+- Si es un producto digital o servicio, peso puede ser "N/A"
+- Los precios deben reflejar valores de mercado actuales`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -196,14 +158,12 @@ IMPORTANTE:
   } catch (error) {
     console.error('Error generating product data with OpenAI:', error);
     
-    const precioPromedio = parseFloat(((precioAmazon + precioWalmart) / 2).toFixed(2));
-    
     return {
       nombre,
-      precioAmazon,
-      precioWalmart,
-      precioPromedio,
-      descripcion: `${nombre} es un producto de calidad disponible en Amazon y Walmart a precios competitivos.`,
+      precioAmazon: 0,
+      precioWalmart: 0,
+      precioPromedio: 0,
+      descripcion: `${nombre} - Producto no disponible. Error al obtener información de precios.`,
       fichaTecnica: {
         marca: marca || 'Desconocida',
         categoria: categoria || 'General',
@@ -242,19 +202,14 @@ Deno.serve(async (req: Request) => {
     const productInfo = await searchUPCDatabase(upc);
     console.log(`Product found: ${productInfo.name}`);
 
-    const amazonPrice = generateRealisticPrice(productInfo.name, upc, 0.05);
-    const walmartPrice = generateRealisticPrice(productInfo.name, upc, -0.03);
-
-    console.log(`Amazon price: $${amazonPrice}, Walmart price: $${walmartPrice}`);
-
     const fichaEnriquecida = await generarFichaProducto(
       productInfo.name,
       productInfo.category || 'General',
       productInfo.brand || 'Desconocida',
-      amazonPrice,
-      walmartPrice,
       upc
     );
+
+    console.log(`Amazon price: $${fichaEnriquecida.precioAmazon}, Walmart price: $${fichaEnriquecida.precioWalmart}`);
 
     const leaderPrice = parseFloat((fichaEnriquecida.precioPromedio * 1.15).toFixed(2));
 
