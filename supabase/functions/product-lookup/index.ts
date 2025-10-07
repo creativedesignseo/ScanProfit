@@ -10,8 +10,8 @@ const corsHeaders = {
 interface ProductData {
   upc: string;
   nombre: string;
-  precioAmazon: number;
-  precioWalmart: number;
+  precioAmazon?: number;
+  precioWalmart?: number;
   precioPromedio: number;
   descripcion: string;
   fichaTecnica: {
@@ -23,6 +23,10 @@ interface ProductData {
   };
   image?: string;
   leaderPrice: number;
+  priceMeta: {
+    amazon: 'upcitemdb_offer' | 'missing';
+    walmart: 'upcitemdb_offer' | 'missing';
+  };
 }
 
 async function searchUPCDatabase(upc: string): Promise<{ name: string; category?: string; brand?: string; image?: string } | null> {
@@ -83,53 +87,80 @@ async function searchUPCDatabase(upc: string): Promise<{ name: string; category?
   };
 }
 
-function generateRealisticPrice(productName: string | undefined, upc: string, variance: number = 0): number {
-  const name = (productName || '').toLowerCase();
-  let basePrice = 20;
+async function fetchExternalPrices(upc: string): Promise<{
+  precioAmazon?: number;
+  precioWalmart?: number;
+  priceMeta: {
+    amazon: 'upcitemdb_offer' | 'missing';
+    walmart: 'upcitemdb_offer' | 'missing';
+  };
+}> {
+  console.log('Fetching external prices from UPCItemDB...');
+  
+  const priceMeta = {
+    amazon: 'missing' as const,
+    walmart: 'missing' as const,
+  };
+  
+  let precioAmazon: number | undefined;
+  let precioWalmart: number | undefined;
+  
+  try {
+    const response = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${upc}`, {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
 
-  if (name.includes('auricular') || name.includes('headphone') || name.includes('bluetooth')) {
-    basePrice = 50 + Math.random() * 100;
-  } else if (name.includes('laptop') || name.includes('computador')) {
-    basePrice = 400 + Math.random() * 800;
-  } else if (name.includes('phone') || name.includes('móvil') || name.includes('celular')) {
-    basePrice = 200 + Math.random() * 600;
-  } else if (name.includes('tv') || name.includes('television')) {
-    basePrice = 300 + Math.random() * 700;
-  } else if (name.includes('cuchillo') || name.includes('knife') || name.includes('sartén') || name.includes('pan')) {
-    basePrice = 30 + Math.random() * 70;
-  } else if (name.includes('café') || name.includes('coffee') || name.includes('cafetera')) {
-    basePrice = 25 + Math.random() * 50;
-  } else if (name.includes('juego') || name.includes('set') || name.includes('kit')) {
-    basePrice = 35 + Math.random() * 80;
-  } else if (name.includes('libro') || name.includes('book')) {
-    basePrice = 10 + Math.random() * 30;
-  } else if (name.includes('ropa') || name.includes('shirt') || name.includes('pant')) {
-    basePrice = 15 + Math.random() * 50;
-  } else if (name.includes('juguete') || name.includes('toy')) {
-    basePrice = 15 + Math.random() * 60;
-  } else if (name.includes('herramienta') || name.includes('tool')) {
-    basePrice = 25 + Math.random() * 100;
-  } else {
-    const seed = parseInt(upc.slice(-4)) || 1000;
-    basePrice = (seed / 100) + Math.random() * 30 + 10;
+    if (response.ok) {
+      const data = await response.json();
+      
+      if (data.items && data.items.length > 0) {
+        const item = data.items[0];
+        
+        if (item.offers && Array.isArray(item.offers)) {
+          console.log(`Found ${item.offers.length} offers in UPCItemDB`);
+          
+          for (const offer of item.offers) {
+            if (offer.merchant && offer.price) {
+              const merchant = offer.merchant.toLowerCase();
+              const price = parseFloat(offer.price);
+              
+              if (!isNaN(price) && price > 0) {
+                if (merchant.includes('amazon') && !precioAmazon) {
+                  precioAmazon = parseFloat(price.toFixed(2));
+                  priceMeta.amazon = 'upcitemdb_offer';
+                  console.log(`Found Amazon price: $${precioAmazon}`);
+                }
+                
+                if (merchant.includes('walmart') && !precioWalmart) {
+                  precioWalmart = parseFloat(price.toFixed(2));
+                  priceMeta.walmart = 'upcitemdb_offer';
+                  console.log(`Found Walmart price: $${precioWalmart}`);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching prices from UPCItemDB:', error);
   }
-
-  const finalPrice = basePrice * (1 + variance);
-  return parseFloat(finalPrice.toFixed(2));
+  
+  return { precioAmazon, precioWalmart, priceMeta };
 }
 
 async function generarFichaProducto(
   nombre: string,
   categoria: string,
   marca: string,
-  precioAmazon: number,
-  precioWalmart: number,
+  precioAmazon: number | undefined,
+  precioWalmart: number | undefined,
+  precioPromedio: number,
   upc: string
 ): Promise<{
   nombre: string;
-  precioAmazon: number;
-  precioWalmart: number;
-  precioPromedio: number;
   descripcion: string;
   fichaTecnica: {
     marca: string;
@@ -144,7 +175,14 @@ async function generarFichaProducto(
       apiKey: Deno.env.get('OPENAI_API_KEY'),
     });
 
-    const precioPromedio = parseFloat(((precioAmazon + precioWalmart) / 2).toFixed(2));
+    const pricesInfo = [];
+    if (precioAmazon !== undefined) {
+      pricesInfo.push(`Precio Amazon: $${precioAmazon}`);
+    }
+    if (precioWalmart !== undefined) {
+      pricesInfo.push(`Precio Walmart: $${precioWalmart}`);
+    }
+    pricesInfo.push(`Precio Promedio: $${precioPromedio}`);
 
     const prompt = `Eres un asistente experto en productos de consumo. Dado el siguiente producto, genera una ficha completa en formato JSON.
 
@@ -152,17 +190,12 @@ Producto:
 - Nombre: ${nombre}
 - Categoría: ${categoria}
 - Marca: ${marca}
-- Precio Amazon: $${precioAmazon}
-- Precio Walmart: $${precioWalmart}
-- Precio Promedio: $${precioPromedio}
+${pricesInfo.join('\n')}
 - Código de barras: ${upc}
 
 Genera un JSON con la siguiente estructura exacta:
 {
   "nombre": "<nombre mejorado del producto>",
-  "precioAmazon": ${precioAmazon},
-  "precioWalmart": ${precioWalmart},
-  "precioPromedio": ${precioPromedio},
   "descripcion": "<descripción detallada de 2-3 oraciones del producto, sus características y beneficios>",
   "fichaTecnica": {
     "marca": "<marca del producto>",
@@ -175,7 +208,7 @@ Genera un JSON con la siguiente estructura exacta:
 
 IMPORTANTE:
 - Responde SOLO con el JSON, sin texto adicional
-- Los precios deben ser números, no strings
+- NO incluyas campos de precios en tu respuesta - serán agregados automáticamente
 - La descripción debe ser profesional y útil
 - El peso debe incluir unidad (g, kg, ml, L, oz, lb, etc.)
 - Si es un producto digital o servicio, peso puede ser "N/A"`;
@@ -192,18 +225,23 @@ IMPORTANTE:
     const cleanedResponse = responseText.replace(/```json\n?|```\n?/g, '').trim();
     const fichaProducto = JSON.parse(cleanedResponse);
 
-    return fichaProducto;
+    return {
+      nombre: fichaProducto.nombre || nombre,
+      descripcion: fichaProducto.descripcion || `${nombre} - Producto disponible para análisis de precios.`,
+      fichaTecnica: fichaProducto.fichaTecnica || {
+        marca: marca || 'Desconocida',
+        categoria: categoria || 'General',
+        peso: 'N/A',
+        origen: 'Internacional',
+        codigo_barras: upc,
+      },
+    };
   } catch (error) {
     console.error('Error generating product data with OpenAI:', error);
     
-    const precioPromedio = parseFloat(((precioAmazon + precioWalmart) / 2).toFixed(2));
-    
     return {
       nombre,
-      precioAmazon,
-      precioWalmart,
-      precioPromedio,
-      descripcion: `${nombre} es un producto de calidad disponible en Amazon y Walmart a precios competitivos.`,
+      descripcion: `${nombre} - Producto generado automáticamente con ficha técnica básica.`,
       fichaTecnica: {
         marca: marca || 'Desconocida',
         categoria: categoria || 'General',
@@ -242,32 +280,57 @@ Deno.serve(async (req: Request) => {
     const productInfo = await searchUPCDatabase(upc);
     console.log(`Product found: ${productInfo.name}`);
 
-    const amazonPrice = generateRealisticPrice(productInfo.name, upc, 0.05);
-    const walmartPrice = generateRealisticPrice(productInfo.name, upc, -0.03);
+    // Fetch real external prices
+    const { precioAmazon, precioWalmart, priceMeta } = await fetchExternalPrices(upc);
 
-    console.log(`Amazon price: $${amazonPrice}, Walmart price: $${walmartPrice}`);
+    // Return 404 if no prices found
+    if (precioAmazon === undefined && precioWalmart === undefined) {
+      console.log('No external prices found for UPC');
+      return new Response(
+        JSON.stringify({ error: 'No se encontraron precios para este UPC' }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
+    // Calculate precioPromedio from available prices
+    let precioPromedio: number;
+    if (precioAmazon !== undefined && precioWalmart !== undefined) {
+      precioPromedio = parseFloat(((precioAmazon + precioWalmart) / 2).toFixed(2));
+    } else if (precioAmazon !== undefined) {
+      precioPromedio = precioAmazon;
+    } else {
+      precioPromedio = precioWalmart!;
+    }
+
+    console.log(`Amazon price: ${precioAmazon ? '$' + precioAmazon : 'N/A'}, Walmart price: ${precioWalmart ? '$' + precioWalmart : 'N/A'}, Average: $${precioPromedio}`);
+
+    // Enrich product data with OpenAI (description and fichaTecnica only)
     const fichaEnriquecida = await generarFichaProducto(
       productInfo.name,
       productInfo.category || 'General',
       productInfo.brand || 'Desconocida',
-      amazonPrice,
-      walmartPrice,
+      precioAmazon,
+      precioWalmart,
+      precioPromedio,
       upc
     );
 
-    const leaderPrice = parseFloat((fichaEnriquecida.precioPromedio * 1.15).toFixed(2));
+    const leaderPrice = parseFloat((precioPromedio * 1.15).toFixed(2));
 
     const result: ProductData = {
       upc,
       nombre: fichaEnriquecida.nombre,
-      precioAmazon: fichaEnriquecida.precioAmazon,
-      precioWalmart: fichaEnriquecida.precioWalmart,
-      precioPromedio: fichaEnriquecida.precioPromedio,
+      precioAmazon,
+      precioWalmart,
+      precioPromedio,
       descripcion: fichaEnriquecida.descripcion,
       fichaTecnica: fichaEnriquecida.fichaTecnica,
       image: productInfo.image,
       leaderPrice,
+      priceMeta,
     };
 
     return new Response(
