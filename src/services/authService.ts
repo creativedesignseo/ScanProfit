@@ -49,6 +49,63 @@ export async function logoutEmployee(): Promise<void> {
   }
 }
 
+export async function registerEmployee(
+  email: string, 
+  password: string, 
+  nombreCompleto: string,
+  puesto?: string,
+  departamento?: string
+): Promise<Employee> {
+  // Register user in Supabase Auth
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        nombre_completo: nombreCompleto,
+      }
+    }
+  });
+
+  if (authError) {
+    throw new Error(`Error al registrar: ${authError.message}`);
+  }
+
+  if (!authData.user) {
+    throw new Error('No se pudo crear el usuario');
+  }
+
+  // The trigger will automatically create the employee record
+  // Wait a moment and then fetch the employee data
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  const { data: employeeData, error: employeeError } = await supabase
+    .from('employees')
+    .select('*')
+    .eq('id', authData.user.id)
+    .maybeSingle();
+
+  if (employeeError || !employeeData) {
+    throw new Error('Error al crear el perfil de empleado');
+  }
+
+  // Update additional fields if provided
+  if (puesto || departamento) {
+    const updates: Partial<Employee> = {};
+    if (puesto) updates.puesto = puesto;
+    if (departamento) updates.departamento = departamento;
+
+    await supabase
+      .from('employees')
+      .update(updates)
+      .eq('id', authData.user.id);
+
+    Object.assign(employeeData, updates);
+  }
+
+  return employeeData as Employee;
+}
+
 export async function getCurrentEmployee(): Promise<Employee | null> {
   const { data: { session } } = await supabase.auth.getSession();
 

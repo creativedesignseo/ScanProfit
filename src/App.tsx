@@ -6,7 +6,7 @@ import { ProductDetails } from './components/ProductDetails';
 import { LoginScreen } from './components/LoginScreen';
 import { exportToCSV } from './utils/csvExport';
 import { fetchProductData } from './services/productService';
-import { loginEmployee, logoutEmployee, getCurrentEmployee } from './services/authService';
+import { loginEmployee, registerEmployee, logoutEmployee, getCurrentEmployee } from './services/authService';
 import type { Product } from './types/product';
 import type { Employee } from './types/employee';
 
@@ -37,6 +37,18 @@ function App() {
     setIsLoginLoading(true);
     try {
       const employeeData = await loginEmployee(email, password);
+      setEmployee(employeeData);
+    } catch (error) {
+      throw error;
+    } finally {
+      setIsLoginLoading(false);
+    }
+  };
+
+  const handleRegister = async (email: string, password: string, nombreCompleto: string) => {
+    setIsLoginLoading(true);
+    try {
+      const employeeData = await registerEmployee(email, password, nombreCompleto);
       setEmployee(employeeData);
     } catch (error) {
       throw error;
@@ -103,7 +115,7 @@ function App() {
   }
 
   if (!employee) {
-    return <LoginScreen onLogin={handleLogin} isLoading={isLoginLoading} />;
+    return <LoginScreen onLogin={handleLogin} onRegister={handleRegister} isLoading={isLoginLoading} />;
   }
 
   return (
