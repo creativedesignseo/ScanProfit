@@ -38,8 +38,6 @@ function App() {
     try {
       const employeeData = await loginEmployee(email, password);
       setEmployee(employeeData);
-    } catch (error) {
-      throw error;
     } finally {
       setIsLoginLoading(false);
     }
@@ -50,8 +48,6 @@ function App() {
     try {
       const employeeData = await registerEmployee(email, password, nombreCompleto);
       setEmployee(employeeData);
-    } catch (error) {
-      throw error;
     } finally {
       setIsLoginLoading(false);
     }
@@ -63,7 +59,7 @@ function App() {
       setEmployee(null);
       setScannedProducts([]);
       setCurrentProduct(null);
-    } catch (error) {
+    } catch {
       alert('Error al cerrar sesión');
     }
   };
@@ -87,7 +83,7 @@ function App() {
       } else {
         alert(`El producto "${product.nombre || product.name}" ya está en el lote.`);
       }
-    } catch (error) {
+    } catch {
       alert('Error al buscar el producto. Intenta nuevamente.');
     } finally {
       setIsLoading(false);

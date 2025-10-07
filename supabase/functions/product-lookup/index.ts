@@ -1,4 +1,3 @@
-// @ts-nocheck - Este archivo usa APIs de Deno disponibles en Supabase Edge Functions
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import OpenAI from "npm:openai@4.47.1";
 
@@ -225,8 +224,8 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const url = new URL(req.url);
-    const upc = url.searchParams.get('upc');
+    const body = await req.json();
+    const upc = body.upc;
 
     if (!upc) {
       return new Response(
