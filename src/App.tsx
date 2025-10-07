@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Camera, Download, Trash2, PackageOpen, BarChart3 } from 'lucide-react';
+import { Download, PackageOpen, BarChart3 } from 'lucide-react';
 import { ProductScanner } from './components/ProductScanner';
 import { ProductTable } from './components/ProductTable';
 import { ProductDetails } from './components/ProductDetails';
