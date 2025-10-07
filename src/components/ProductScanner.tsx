@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Scan, Keyboard, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Scan, Keyboard, Loader2, Camera } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
 
 interface ProductScannerProps {
   onScan: (upc: string) => void;
@@ -9,6 +10,83 @@ interface ProductScannerProps {
 export function ProductScanner({ onScan, isLoading }: ProductScannerProps) {
   const [upc, setUpc] = useState('');
   const [inputMode, setInputMode] = useState<'manual' | 'scanner'>('manual');
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+  const scannerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Cleanup scanner when component unmounts or mode changes
+    return () => {
+      if (html5QrCodeRef.current?.isScanning) {
+        html5QrCodeRef.current.stop().catch((err) => {
+          console.error('Error stopping scanner:', err);
+        });
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (inputMode === 'scanner' && !isCameraActive && !html5QrCodeRef.current?.isScanning) {
+      startCamera();
+    } else if (inputMode === 'manual' && html5QrCodeRef.current?.isScanning) {
+      stopCamera();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputMode]);
+
+  const startCamera = async () => {
+    setCameraError(null);
+    try {
+      if (!html5QrCodeRef.current) {
+        html5QrCodeRef.current = new Html5Qrcode('qr-reader');
+      }
+
+      const qrCodeSuccessCallback = (decodedText: string) => {
+        console.log('QR Code scanned:', decodedText);
+        // Automatically submit when a code is scanned
+        onScan(decodedText);
+        setUpc(decodedText);
+        // Optionally stop camera after successful scan
+        stopCamera();
+      };
+
+      const config = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+      };
+
+      await html5QrCodeRef.current.start(
+        { facingMode: "environment" },
+        config,
+        qrCodeSuccessCallback,
+        (errorMessage) => {
+          // Ignore frequent errors from scanning attempts
+          if (!errorMessage.includes('NotFoundException')) {
+            console.log('QR Code scan error:', errorMessage);
+          }
+        }
+      );
+
+      setIsCameraActive(true);
+    } catch (err) {
+      console.error('Error starting camera:', err);
+      setCameraError('No se pudo acceder a la cámara. Verifica los permisos.');
+      setIsCameraActive(false);
+    }
+  };
+
+  const stopCamera = async () => {
+    try {
+      if (html5QrCodeRef.current?.isScanning) {
+        await html5QrCodeRef.current.stop();
+      }
+      setIsCameraActive(false);
+    } catch (err) {
+      console.error('Error stopping camera:', err);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,9 +127,35 @@ export function ProductScanner({ onScan, isLoading }: ProductScannerProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {inputMode === 'scanner' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm text-slate-600 mb-2">
+              <Camera className="w-4 h-4" />
+              <span>Coloca el código de barras frente a la cámara</span>
+            </div>
+            <div
+              id="qr-reader"
+              ref={scannerRef}
+              className="w-full rounded-lg overflow-hidden border-2 border-orange-500 bg-slate-900"
+              style={{ minHeight: '300px' }}
+            />
+            {cameraError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {cameraError}
+              </div>
+            )}
+            {isCameraActive && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                <Camera className="w-4 h-4" />
+                <span>Cámara activa - Escanea el código de barras</span>
+              </div>
+            )}
+          </div>
+        )}
+
         <div>
           <label htmlFor="upc" className="block text-sm font-medium text-slate-700 mb-2">
-            {inputMode === 'manual' ? 'Ingresa el código' : 'Escanea el código de barras'}
+            {inputMode === 'manual' ? 'Ingresa el código' : 'Código escaneado / Manual'}
           </label>
           <div className="relative">
             <input
@@ -59,10 +163,10 @@ export function ProductScanner({ onScan, isLoading }: ProductScannerProps) {
               type="text"
               value={upc}
               onChange={(e) => setUpc(e.target.value)}
-              placeholder={inputMode === 'manual' ? 'Ej: 7501055363278' : 'Escanea aquí...'}
+              placeholder={inputMode === 'manual' ? 'Ej: 7501055363278' : 'Escanea o ingresa manualmente...'}
               className="w-full px-4 py-3 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-slate-900 placeholder-slate-400"
               disabled={isLoading}
-              autoFocus
+              autoFocus={inputMode === 'manual'}
               autoComplete="off"
             />
             {isLoading && (
@@ -76,9 +180,9 @@ export function ProductScanner({ onScan, isLoading }: ProductScannerProps) {
         <button
           type="submit"
           disabled={!upc.trim() || isLoading}
-          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-amber-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg active:scale-95"
+          className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white px-8 py-5 rounded-xl font-bold text-lg hover:from-orange-600 hover:to-amber-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl active:scale-95"
         >
-          <Scan className="w-5 h-5" />
+          <Scan className="w-7 h-7" />
           <span>{isLoading ? 'Buscando...' : 'Buscar Producto'}</span>
         </button>
       </form>
