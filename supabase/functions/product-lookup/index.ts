@@ -224,8 +224,8 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const body = await req.json();
-    const upc = body.upc;
+    const url = new URL(req.url);
+    const upc = url.searchParams.get('upc');
 
     if (!upc) {
       return new Response(
@@ -240,17 +240,6 @@ Deno.serve(async (req: Request) => {
     console.log(`Looking up product with UPC: ${upc}`);
 
     const productInfo = await searchUPCDatabase(upc);
-    
-    if (!productInfo) {
-      return new Response(
-        JSON.stringify({ error: 'Product not found' }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-    
     console.log(`Product found: ${productInfo.name}`);
 
     const amazonPrice = generateRealisticPrice(productInfo.name, upc, 0.05);
