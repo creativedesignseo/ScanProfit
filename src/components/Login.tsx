@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { Lock, User } from 'lucide-react';
+import { Lock, User, Copy, Check } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (username: string, password: string) => void;
@@ -9,6 +9,23 @@ export function Login({ onLogin }: LoginProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [copiedUser, setCopiedUser] = useState(false);
+  const [copiedPass, setCopiedPass] = useState(false);
+
+  const copyToClipboard = async (text: string, type: 'user' | 'pass') => {
+    try {
+      await navigator.clipboard.writeText(text);
+      if (type === 'user') {
+        setCopiedUser(true);
+        setTimeout(() => setCopiedUser(false), 2000);
+      } else {
+        setCopiedPass(true);
+        setTimeout(() => setCopiedPass(false), 2000);
+      }
+    } catch (err) {
+      console.error('Error al copiar:', err);
+    }
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -43,12 +60,46 @@ export function Login({ onLogin }: LoginProps) {
           </div>
 
           <div className="bg-baraki-yellow-light border-2 border-baraki-yellow-dark rounded-xl p-4 mb-6">
-            <p className="text-center text-baraki-black font-bold text-lg mb-2">
+            <p className="text-center text-baraki-black font-bold text-lg mb-3">
               Aplicación Demostrativa
             </p>
-            <div className="text-center text-baraki-black-light text-sm space-y-1">
-              <p>Usuario: <span className="font-bold text-baraki-black">demo</span></p>
-              <p>Contraseña: <span className="font-bold text-baraki-black">demo</span></p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between bg-white rounded-lg p-3 border border-baraki-yellow-dark">
+                <div className="flex-1">
+                  <p className="text-xs text-baraki-black-light">Usuario</p>
+                  <p className="font-bold text-baraki-black">demo</p>
+                </div>
+                <button
+                  onClick={() => copyToClipboard('demo', 'user')}
+                  className="ml-2 p-2 hover:bg-baraki-yellow rounded-lg transition-colors duration-200"
+                  type="button"
+                  title="Copiar usuario"
+                >
+                  {copiedUser ? (
+                    <Check className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-baraki-black-light" />
+                  )}
+                </button>
+              </div>
+              <div className="flex items-center justify-between bg-white rounded-lg p-3 border border-baraki-yellow-dark">
+                <div className="flex-1">
+                  <p className="text-xs text-baraki-black-light">Contraseña</p>
+                  <p className="font-bold text-baraki-black">demo</p>
+                </div>
+                <button
+                  onClick={() => copyToClipboard('demo', 'pass')}
+                  className="ml-2 p-2 hover:bg-baraki-yellow rounded-lg transition-colors duration-200"
+                  type="button"
+                  title="Copiar contraseña"
+                >
+                  {copiedPass ? (
+                    <Check className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-baraki-black-light" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
