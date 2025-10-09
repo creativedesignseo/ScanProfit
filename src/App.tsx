@@ -9,8 +9,8 @@ import { fetchProductData } from './services/productService';
 import type { Product } from './types/product';
 
 const CREDENTIALS = {
-  username: 'admin',
-  password: 'baraki2024'
+  username: 'demo',
+  password: 'demo'
 };
 
 function App() {

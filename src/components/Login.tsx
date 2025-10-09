@@ -42,6 +42,16 @@ export function Login({ onLogin }: LoginProps) {
             </p>
           </div>
 
+          <div className="bg-baraki-yellow-light border-2 border-baraki-yellow-dark rounded-xl p-4 mb-6">
+            <p className="text-center text-baraki-black font-bold text-lg mb-2">
+              Aplicación Demostrativa
+            </p>
+            <div className="text-center text-baraki-black-light text-sm space-y-1">
+              <p>Usuario: <span className="font-bold text-baraki-black">demo</span></p>
+              <p>Contraseña: <span className="font-bold text-baraki-black">demo</span></p>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label
