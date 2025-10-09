@@ -200,9 +200,9 @@ async function searchUPCDatabase(upc: string): Promise<{ name: string; category?
     console.error('UPCItemDB error:', error);
   }
 
-  console.log('Product not found in databases, generating generic product');
+  console.log('Product not found in databases, will search by UPC directly');
   return {
-    name: `Producto ${upc.slice(-6)}`,
+    name: upc,
     category: 'General',
     brand: 'Desconocida',
     image: 'https://images.pexels.com/photos/264547/pexels-photo-264547.jpeg?auto=compress&cs=tinysrgb&w=400',
