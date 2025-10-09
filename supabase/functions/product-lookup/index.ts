@@ -25,6 +25,132 @@ interface ProductData {
   leaderPrice: number;
 }
 
+interface AmazonProduct {
+  product_title?: string;
+  product_price?: string;
+  product_original_price?: string;
+  product_photo?: string;
+  product_description?: string;
+  brand?: string;
+  category?: string;
+}
+
+async function searchAmazonRealPrice(query: string, asin?: string): Promise<{ price: number; title?: string; image?: string; brand?: string } | null> {
+  try {
+    const rapidApiKey = Deno.env.get('RAPIDAPI_KEY');
+    if (!rapidApiKey) {
+      console.error('RAPIDAPI_KEY not found in environment');
+      return null;
+    }
+
+    let url = '';
+    if (asin) {
+      url = `https://real-time-amazon-data.p.rapidapi.com/product-details?asin=${asin}&country=US`;
+    } else {
+      url = `https://real-time-amazon-data.p.rapidapi.com/search?query=${encodeURIComponent(query)}&page=1&country=US&sort_by=RELEVANCE&product_condition=ALL`;
+    }
+
+    console.log('Fetching Amazon data from RapidAPI...');
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-RapidAPI-Key': rapidApiKey,
+        'X-RapidAPI-Host': 'real-time-amazon-data.p.rapidapi.com'
+      }
+    });
+
+    if (!response.ok) {
+      console.error('RapidAPI response error:', response.status, response.statusText);
+      return null;
+    }
+
+    const data = await response.json();
+    console.log('RapidAPI response received');
+
+    let product: AmazonProduct | null = null;
+
+    if (data.data && data.data.products && data.data.products.length > 0) {
+      product = data.data.products[0];
+    } else if (data.data && data.data.product_title) {
+      product = data.data;
+    }
+
+    if (!product) {
+      console.log('No product found in RapidAPI response');
+      return null;
+    }
+
+    let price = 0;
+    const priceStr = product.product_price || product.product_original_price || '';
+    const priceMatch = priceStr.match(/[\d,]+\.?\d*/);
+    if (priceMatch) {
+      price = parseFloat(priceMatch[0].replace(',', ''));
+    }
+
+    if (price === 0) {
+      console.log('Could not extract valid price from Amazon data');
+      return null;
+    }
+
+    return {
+      price,
+      title: product.product_title,
+      image: product.product_photo,
+      brand: product.brand
+    };
+  } catch (error) {
+    console.error('Error fetching Amazon price from RapidAPI:', error);
+    return null;
+  }
+}
+
+async function searchWalmartRealPrice(query: string): Promise<{ price: number; title?: string; image?: string } | null> {
+  try {
+    const rapidApiKey = Deno.env.get('RAPIDAPI_KEY');
+    if (!rapidApiKey) {
+      return null;
+    }
+
+    console.log('Fetching Walmart data from RapidAPI...');
+    const response = await fetch(
+      `https://walmart-api4.p.rapidapi.com/products/search?query=${encodeURIComponent(query)}&page=1&sortBy=best_seller`,
+      {
+        method: 'GET',
+        headers: {
+          'X-RapidAPI-Key': rapidApiKey,
+          'X-RapidAPI-Host': 'walmart-api4.p.rapidapi.com'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      console.error('Walmart RapidAPI response error:', response.status);
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (data.products && data.products.length > 0) {
+      const product = data.products[0];
+      const price = parseFloat(product.price || product.currentPrice || 0);
+
+      if (price > 0) {
+        return {
+          price,
+          title: product.title || product.name,
+          image: product.thumbnail || product.image
+        };
+      }
+    }
+
+    console.log('No valid Walmart product found');
+    return null;
+  } catch (error) {
+    console.error('Error fetching Walmart price from RapidAPI:', error);
+    return null;
+  }
+}
+
 async function searchUPCDatabase(upc: string): Promise<{ name: string; category?: string; brand?: string; image?: string } | null> {
   console.log(`Searching for UPC: ${upc}`);
   
@@ -242,15 +368,43 @@ Deno.serve(async (req: Request) => {
     const productInfo = await searchUPCDatabase(upc);
     console.log(`Product found: ${productInfo.name}`);
 
-    const amazonPrice = generateRealisticPrice(productInfo.name, upc, 0.05);
-    const walmartPrice = generateRealisticPrice(productInfo.name, upc, -0.03);
+    let amazonPrice = 0;
+    let walmartPrice = 0;
+    let realProductName = productInfo.name;
+    let realProductImage = productInfo.image;
+    let realBrand = productInfo.brand;
 
-    console.log(`Amazon price: $${amazonPrice}, Walmart price: $${walmartPrice}`);
+    console.log('Attempting to fetch real prices from Amazon...');
+    const amazonData = await searchAmazonRealPrice(productInfo.name);
+
+    if (amazonData && amazonData.price > 0) {
+      amazonPrice = amazonData.price;
+      if (amazonData.title) realProductName = amazonData.title;
+      if (amazonData.image) realProductImage = amazonData.image;
+      if (amazonData.brand) realBrand = amazonData.brand;
+      console.log(`Real Amazon price found: $${amazonPrice}`);
+    } else {
+      console.log('Using fallback price for Amazon');
+      amazonPrice = generateRealisticPrice(productInfo.name, upc, 0.05);
+    }
+
+    console.log('Attempting to fetch real prices from Walmart...');
+    const walmartData = await searchWalmartRealPrice(productInfo.name);
+
+    if (walmartData && walmartData.price > 0) {
+      walmartPrice = walmartData.price;
+      console.log(`Real Walmart price found: $${walmartPrice}`);
+    } else {
+      console.log('Using fallback price for Walmart');
+      walmartPrice = generateRealisticPrice(productInfo.name, upc, -0.03);
+    }
+
+    console.log(`Final prices - Amazon: $${amazonPrice}, Walmart: $${walmartPrice}`);
 
     const fichaEnriquecida = await generarFichaProducto(
-      productInfo.name,
+      realProductName,
       productInfo.category || 'General',
-      productInfo.brand || 'Desconocida',
+      realBrand || 'Desconocida',
       amazonPrice,
       walmartPrice,
       upc
@@ -266,7 +420,7 @@ Deno.serve(async (req: Request) => {
       precioPromedio: fichaEnriquecida.precioPromedio,
       descripcion: fichaEnriquecida.descripcion,
       fichaTecnica: fichaEnriquecida.fichaTecnica,
-      image: productInfo.image,
+      image: realProductImage,
       leaderPrice,
     };
 
