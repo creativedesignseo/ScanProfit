@@ -8,7 +8,10 @@ import { exportToCSV } from './utils/csvExport';
 import { fetchProductData } from './services/productService';
 import type { Product } from './types/product';
 
-const CORRECT_PASSWORD = 'baraki2024';
+const CREDENTIALS = {
+  username: 'admin',
+  password: 'baraki2024'
+};
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -23,12 +26,12 @@ function App() {
     }
   }, []);
 
-  const handleLogin = (password: string) => {
-    if (password === CORRECT_PASSWORD) {
+  const handleLogin = (username: string, password: string) => {
+    if (username === CREDENTIALS.username && password === CREDENTIALS.password) {
       setIsAuthenticated(true);
       localStorage.setItem('baraki_auth', 'true');
     } else {
-      alert('Contraseña incorrecta');
+      alert('Usuario o contraseña incorrectos');
     }
   };
 

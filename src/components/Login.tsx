@@ -1,21 +1,26 @@
 import { useState, FormEvent } from 'react';
-import { Lock } from 'lucide-react';
+import { Lock, User } from 'lucide-react';
 
 interface LoginProps {
-  onLogin: (password: string) => void;
+  onLogin: (username: string, password: string) => void;
 }
 
 export function Login({ onLogin }: LoginProps) {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (!username.trim()) {
+      setError('Por favor ingresa un usuario');
+      return;
+    }
     if (!password.trim()) {
       setError('Por favor ingresa una contraseña');
       return;
     }
-    onLogin(password);
+    onLogin(username, password);
     setError('');
   };
 
@@ -40,10 +45,34 @@ export function Login({ onLogin }: LoginProps) {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label
+                htmlFor="username"
+                className="block text-sm font-semibold text-baraki-black mb-2"
+              >
+                Usuario
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-baraki-black-light" />
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setError('');
+                  }}
+                  placeholder="Ingresa tu usuario"
+                  className="w-full pl-10 pr-4 py-3 border-2 border-baraki-black rounded-lg focus:ring-2 focus:ring-baraki-yellow focus:border-baraki-yellow text-lg transition-all"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
                 htmlFor="password"
                 className="block text-sm font-semibold text-baraki-black mb-2"
               >
-                Contraseña de Acceso
+                Contraseña
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-baraki-black-light" />
@@ -57,13 +86,13 @@ export function Login({ onLogin }: LoginProps) {
                   }}
                   placeholder="Ingresa tu contraseña"
                   className="w-full pl-10 pr-4 py-3 border-2 border-baraki-black rounded-lg focus:ring-2 focus:ring-baraki-yellow focus:border-baraki-yellow text-lg transition-all"
-                  autoFocus
                 />
               </div>
-              {error && (
-                <p className="mt-2 text-sm text-red-600 font-medium">{error}</p>
-              )}
             </div>
+
+            {error && (
+              <p className="text-sm text-red-600 font-medium text-center">{error}</p>
+            )}
 
             <button
               type="submit"
