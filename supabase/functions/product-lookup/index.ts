@@ -209,40 +209,6 @@ async function searchUPCDatabase(upc: string): Promise<{ name: string; category?
   };
 }
 
-function generateRealisticPrice(productName: string | undefined, upc: string, variance: number = 0): number {
-  const name = (productName || '').toLowerCase();
-  let basePrice = 20;
-
-  if (name.includes('auricular') || name.includes('headphone') || name.includes('bluetooth')) {
-    basePrice = 50 + Math.random() * 100;
-  } else if (name.includes('laptop') || name.includes('computador')) {
-    basePrice = 400 + Math.random() * 800;
-  } else if (name.includes('phone') || name.includes('móvil') || name.includes('celular')) {
-    basePrice = 200 + Math.random() * 600;
-  } else if (name.includes('tv') || name.includes('television')) {
-    basePrice = 300 + Math.random() * 700;
-  } else if (name.includes('cuchillo') || name.includes('knife') || name.includes('sartén') || name.includes('pan')) {
-    basePrice = 30 + Math.random() * 70;
-  } else if (name.includes('café') || name.includes('coffee') || name.includes('cafetera')) {
-    basePrice = 25 + Math.random() * 50;
-  } else if (name.includes('juego') || name.includes('set') || name.includes('kit')) {
-    basePrice = 35 + Math.random() * 80;
-  } else if (name.includes('libro') || name.includes('book')) {
-    basePrice = 10 + Math.random() * 30;
-  } else if (name.includes('ropa') || name.includes('shirt') || name.includes('pant')) {
-    basePrice = 15 + Math.random() * 50;
-  } else if (name.includes('juguete') || name.includes('toy')) {
-    basePrice = 15 + Math.random() * 60;
-  } else if (name.includes('herramienta') || name.includes('tool')) {
-    basePrice = 25 + Math.random() * 100;
-  } else {
-    const seed = parseInt(upc.slice(-4)) || 1000;
-    basePrice = (seed / 100) + Math.random() * 30 + 10;
-  }
-
-  const finalPrice = basePrice * (1 + variance);
-  return parseFloat(finalPrice.toFixed(2));
-}
 
 async function generarFichaProducto(
   nombre: string,
@@ -374,7 +340,7 @@ Deno.serve(async (req: Request) => {
     let realProductImage = productInfo.image;
     let realBrand = productInfo.brand;
 
-    console.log('Attempting to fetch real prices from Amazon...');
+    console.log('Fetching real prices from Amazon via RapidAPI...');
     const amazonData = await searchAmazonRealPrice(productInfo.name);
 
     if (amazonData && amazonData.price > 0) {
@@ -384,27 +350,41 @@ Deno.serve(async (req: Request) => {
       if (amazonData.brand) realBrand = amazonData.brand;
       console.log(`Real Amazon price found: $${amazonPrice}`);
     } else {
-      console.log('Using fallback price for Amazon');
-      amazonPrice = generateRealisticPrice(productInfo.name, upc, 0.05);
+      console.log('Amazon price not found via RapidAPI');
     }
 
-    console.log('Attempting to fetch real prices from Walmart...');
+    console.log('Fetching real prices from Walmart via RapidAPI...');
     const walmartData = await searchWalmartRealPrice(productInfo.name);
 
     if (walmartData && walmartData.price > 0) {
       walmartPrice = walmartData.price;
       console.log(`Real Walmart price found: $${walmartPrice}`);
     } else {
-      console.log('Using fallback price for Walmart');
-      walmartPrice = generateRealisticPrice(productInfo.name, upc, -0.03);
+      console.log('Walmart price not found via RapidAPI');
     }
 
-    console.log(`Final prices - Amazon: $${amazonPrice}, Walmart: $${walmartPrice}`);
+    if (amazonPrice === 0 && walmartPrice === 0) {
+      return new Response(
+        JSON.stringify({
+          error: 'No se encontraron precios reales para este producto',
+          message: 'No pudimos encontrar precios en Amazon ni Walmart para este producto. Intenta con otro código de barras.'
+        }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    if (amazonPrice === 0) amazonPrice = walmartPrice;
+    if (walmartPrice === 0) walmartPrice = amazonPrice;
+
+    console.log(`Final real prices - Amazon: $${amazonPrice}, Walmart: $${walmartPrice}`);
 
     const fichaEnriquecida = await generarFichaProducto(
       realProductName,
       productInfo.category || 'General',
-      realBrand || 'Desconocida',
+      realBrand || productInfo.brand || 'Desconocida',
       amazonPrice,
       walmartPrice,
       upc
