@@ -49,7 +49,7 @@ export function Login({ onLogin }: LoginProps) {
             <img
               src="/Baraki Vector.png"
               alt="Baraki Bodegón"
-              className="w-48 h-48 object-contain mb-4"
+              className="w-24 h-24 object-contain mb-4"
             />
             <h1 className="text-3xl font-bold text-baraki-black text-center">
               BARAKI BODEGÓN
