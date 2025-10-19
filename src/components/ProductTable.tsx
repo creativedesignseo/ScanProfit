@@ -49,6 +49,11 @@ export function ProductTable({ products, onRemove }: ProductTableProps) {
                 <p className="text-sm font-bold text-orange-700">${product.leaderPrice.toFixed(2)}</p>
               </div>
             </div>
+            {product.expirationDate && (
+              <div className="mt-2 text-center">
+                <p className="text-xs text-slate-500">Vence: {new Date(product.expirationDate).toLocaleDateString('es-ES')}</p>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -72,6 +77,9 @@ export function ProductTable({ products, onRemove }: ProductTableProps) {
               </th>
               <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                 Precio LÍDER
+              </th>
+              <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider hidden xl:table-cell">
+                Vencimiento
               </th>
               <th className="px-3 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">
                 Acción
@@ -100,6 +108,11 @@ export function ProductTable({ products, onRemove }: ProductTableProps) {
                 <td className="px-3 py-3 whitespace-nowrap">
                   <div className="text-sm font-bold text-orange-600">
                     ${product.leaderPrice.toFixed(2)}
+                  </div>
+                </td>
+                <td className="px-3 py-3 whitespace-nowrap hidden xl:table-cell">
+                  <div className="text-sm text-slate-600">
+                    {product.expirationDate ? new Date(product.expirationDate).toLocaleDateString('es-ES') : '-'}
                   </div>
                 </td>
                 <td className="px-3 py-3 whitespace-nowrap text-right">

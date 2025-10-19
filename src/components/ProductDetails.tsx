@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, Package, TrendingUp } from 'lucide-react';
+import { CheckCircle2, Package, TrendingUp, Calendar } from 'lucide-react';
 import type { Product } from '../types/product';
 
 interface ProductDetailsProps {
@@ -8,17 +8,18 @@ interface ProductDetailsProps {
 }
 
 export function ProductDetails({ product, onSave }: ProductDetailsProps) {
-  const [customPrice, setCustomPrice] = useState('');
+  const [customPrice, setCustomPrice] = useState(product.leaderPrice > 0 ? product.leaderPrice.toString() : '');
+  const [expirationDate, setExpirationDate] = useState(product.expirationDate || '');
 
-  const handleSetPrice = () => {
+  const handleSave = () => {
     const newPrice = parseFloat(customPrice);
     if (!isNaN(newPrice) && newPrice > 0) {
       const updatedProduct = {
         ...product,
         leaderPrice: newPrice,
+        expirationDate: expirationDate || undefined,
       };
       onSave(updatedProduct);
-      setCustomPrice('');
     }
   };
 
@@ -74,14 +75,13 @@ export function ProductDetails({ product, onSave }: ProductDetailsProps) {
           <p className="text-2xl sm:text-3xl font-bold text-slate-700">${product.averagePrice.toFixed(2)}</p>
         </div>
 
-        <div className="text-center p-4 sm:p-5 bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-400 rounded-lg col-span-1 lg:col-span-1 shadow-sm">
-          <div className="flex items-center justify-center mb-2">
+        <div className="p-4 sm:p-5 bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-400 rounded-lg">
+          <div className="flex items-center justify-center mb-3">
             <p className="text-xs sm:text-sm font-semibold text-orange-700">Establece tu Precio</p>
           </div>
-          {product.leaderPrice > 0 ? (
-            <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-orange-700">${product.leaderPrice.toFixed(2)}</p>
-          ) : (
-            <div className="flex flex-col items-center space-y-2">
+          <div className="flex flex-col items-center space-y-2">
+            <div className="flex items-center space-x-2">
+              <span className="text-2xl font-bold text-orange-700">$</span>
               <input
                 type="number"
                 step="0.01"
@@ -89,17 +89,35 @@ export function ProductDetails({ product, onSave }: ProductDetailsProps) {
                 value={customPrice}
                 onChange={(e) => setCustomPrice(e.target.value)}
                 placeholder="0.00"
-                className="w-32 text-2xl font-bold text-orange-700 border-2 border-orange-400 rounded px-3 py-2 text-center"
+                className="w-32 text-2xl font-bold text-orange-700 border-2 border-orange-400 rounded px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
-              <button
-                onClick={handleSetPrice}
-                disabled={!customPrice || parseFloat(customPrice) <= 0}
-                className="px-4 py-2 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-              >
-                Establecer Precio
-              </button>
             </div>
-          )}
+          </div>
+        </div>
+
+        <div className="col-span-1 lg:col-span-2 p-4 sm:p-5 bg-purple-50 border-2 border-purple-300 rounded-lg">
+          <div className="flex items-center justify-center mb-3">
+            <Calendar className="w-4 h-4 text-purple-700 mr-2" />
+            <p className="text-xs sm:text-sm font-semibold text-purple-700">Fecha de Vencimiento</p>
+          </div>
+          <div className="flex justify-center">
+            <input
+              type="date"
+              value={expirationDate}
+              onChange={(e) => setExpirationDate(e.target.value)}
+              className="px-4 py-2 text-base border-2 border-purple-400 rounded-lg text-purple-800 font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+        </div>
+
+        <div className="col-span-1 lg:col-span-2 flex justify-center">
+          <button
+            onClick={handleSave}
+            disabled={!customPrice || parseFloat(customPrice) <= 0}
+            className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg font-bold text-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500"
+          >
+            Guardar Producto
+          </button>
         </div>
 
         <div className="p-4 sm:p-5 bg-white border-2 border-slate-300 rounded-lg col-span-1 lg:col-span-2">

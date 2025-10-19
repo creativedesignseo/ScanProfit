@@ -7,6 +7,7 @@ export interface Product {
   walmartPrice: number;
   averagePrice: number;
   leaderPrice: number;
+  expirationDate?: string;
   image?: string;
 }
 
@@ -19,6 +20,8 @@ export interface ProductDB {
   amazon_price: number;
   walmart_price: number;
   average_price: number;
+  leader_price: number;
+  expiration_date?: string;
   image_url?: string;
   scanned_by: string;
   created_at: string;

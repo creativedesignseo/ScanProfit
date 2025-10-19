@@ -34,7 +34,8 @@ export async function fetchProductData(upc: string): Promise<Product | null> {
       amazonPrice: data.amazonPrice,
       walmartPrice: data.walmartPrice,
       averagePrice: data.averagePrice,
-      leaderPrice: data.leaderPrice,
+      leaderPrice: data.leaderPrice || 0,
+      expirationDate: undefined,
       image: data.image,
     };
   } catch (error) {
@@ -55,6 +56,8 @@ export async function saveProduct(product: Product, userId: string): Promise<boo
         amazon_price: product.amazonPrice,
         walmart_price: product.walmartPrice,
         average_price: product.averagePrice,
+        leader_price: product.leaderPrice,
+        expiration_date: product.expirationDate || null,
         image_url: product.image,
         scanned_by: userId,
         updated_at: new Date().toISOString(),
@@ -94,7 +97,8 @@ export async function getAllProducts(): Promise<Product[]> {
       amazonPrice: row.amazon_price,
       walmartPrice: row.walmart_price,
       averagePrice: row.average_price,
-      leaderPrice: row.average_price * 1.15,
+      leaderPrice: row.leader_price || 0,
+      expirationDate: row.expiration_date || undefined,
       image: row.image_url,
     }));
   } catch (error) {
