@@ -5,6 +5,7 @@ import { ProductTable } from './components/ProductTable';
 import { ProductDetails } from './components/ProductDetails';
 import { exportToCSV } from './utils/csvExport';
 import { fetchProductData, saveProduct } from './services/productService';
+import { syncToGoogleSheets } from './services/googleSheetsService';
 import type { Product } from './types/product';
 
 
@@ -26,13 +27,6 @@ function App() {
       }
 
       setCurrentProduct(product);
-
-      const existingIndex = scannedProducts.findIndex(p => p.upc === product.upc);
-      if (existingIndex === -1) {
-        setScannedProducts([...scannedProducts, product]);
-      } else {
-        alert(`El producto "${product.title}" ya está en el lote.`);
-      }
     } catch (error) {
       alert('Error al buscar el producto. Intenta nuevamente.');
     } finally {
@@ -82,14 +76,33 @@ function App() {
             onSave={async (updatedProduct) => {
               const success = await saveProduct(updatedProduct, userId);
               if (success) {
-                setCurrentProduct(updatedProduct);
                 const existingIndex = scannedProducts.findIndex(p => p.upc === updatedProduct.upc);
                 if (existingIndex !== -1) {
                   const updated = [...scannedProducts];
                   updated[existingIndex] = updatedProduct;
                   setScannedProducts(updated);
+                } else {
+                  setScannedProducts([...scannedProducts, updatedProduct]);
                 }
-                alert('Producto guardado exitosamente');
+
+                const sheetsSynced = await syncToGoogleSheets(
+                  updatedProduct.title,
+                  updatedProduct.upc,
+                  updatedProduct.amazonPrice,
+                  updatedProduct.walmartPrice,
+                  updatedProduct.averagePrice,
+                  updatedProduct.leaderPrice,
+                  updatedProduct.expirationDate,
+                  userId
+                );
+
+                setCurrentProduct(null);
+
+                if (sheetsSynced) {
+                  alert('Producto guardado exitosamente y sincronizado con Google Sheets');
+                } else {
+                  alert('Producto guardado en la base de datos (Google Sheets no configurado)');
+                }
               } else {
                 alert('Error al guardar el producto');
               }
