@@ -70,46 +70,8 @@ export function ProductDetails({ product, onSave }: ProductDetailsProps) {
           <div className="flex items-center justify-center mb-1">
             <TrendingUp className="w-4 h-4 text-slate-700 mr-1" />
             <p className="text-xs sm:text-sm font-semibold text-slate-700">Precio Promedio</p>
-            {!isEditing && (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="ml-2 p-1 hover:bg-slate-200 rounded transition-colors"
-                title="Editar precio"
-              >
-                <Edit2 className="w-3 h-3 text-slate-600" />
-              </button>
-            )}
           </div>
-          {isEditing ? (
-            <div className="flex items-center justify-center space-x-2">
-              <span className="text-xl font-bold text-slate-700">$</span>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={editedPrice}
-                onChange={(e) => setEditedPrice(e.target.value)}
-                className="w-24 text-2xl font-bold text-slate-700 border-2 border-slate-400 rounded px-2 py-1 text-center"
-                autoFocus
-              />
-              <button
-                onClick={handleSave}
-                className="p-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                title="Guardar"
-              >
-                <Save className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleCancel}
-                className="p-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                title="Cancelar"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <p className="text-2xl sm:text-3xl font-bold text-slate-700">${product.averagePrice.toFixed(2)}</p>
-          )}
+          <p className="text-2xl sm:text-3xl font-bold text-slate-700">${product.averagePrice.toFixed(2)}</p>
         </div>
 
         <div className="text-center p-4 sm:p-5 bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-400 rounded-lg col-span-1 lg:col-span-1 shadow-sm">
