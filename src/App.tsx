@@ -85,7 +85,7 @@ function App() {
                 }
 
                 setCurrentProduct(null);
-                alert('Producto guardado exitosamente en la base de datos');
+                alert('Producto guardado exitosamente');
               } else {
                 alert('Error al guardar el producto');
               }
