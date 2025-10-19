@@ -70,32 +70,6 @@ export async function saveProduct(product: Product, userId: string): Promise<boo
       return false;
     }
 
-    // Sync to Google Sheets
-    try {
-      const syncUrl = `${SUPABASE_URL}/functions/v1/sync-to-sheets`;
-      await fetch(syncUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: product.title,
-          upc: product.upc,
-          amazonPrice: product.amazonPrice,
-          walmartPrice: product.walmartPrice,
-          averagePrice: product.averagePrice,
-          leaderPrice: product.leaderPrice,
-          expirationDate: product.expirationDate,
-          scannedBy: userId,
-          timestamp: new Date().toISOString(),
-        }),
-      });
-    } catch (syncError) {
-      console.error('Error syncing to Google Sheets:', syncError);
-      // Don't fail the save if sync fails
-    }
-
     return true;
   } catch (error) {
     console.error('Error saving product:', error);
