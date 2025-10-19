@@ -73,7 +73,6 @@ Responde SOLO con un JSON en este formato exacto:
     }
 
     const averagePrice = parseFloat(((amazonPrice + walmartPrice) / 2).toFixed(2));
-    const leaderPrice = parseFloat((averagePrice * 1.15).toFixed(2));
 
     const result: ProductData = {
       upc,
@@ -83,7 +82,7 @@ Responde SOLO con un JSON en este formato exacto:
       amazonPrice,
       walmartPrice,
       averagePrice,
-      leaderPrice,
+      leaderPrice: 0,
       image: productInfo.imageUrl || null,
     };
 

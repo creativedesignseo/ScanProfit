@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, DollarSign, Package, TrendingUp, Edit2, Save, X } from 'lucide-react';
+import { CheckCircle2, Package, TrendingUp } from 'lucide-react';
 import type { Product } from '../types/product';
 
 interface ProductDetailsProps {
@@ -8,25 +8,18 @@ interface ProductDetailsProps {
 }
 
 export function ProductDetails({ product, onSave }: ProductDetailsProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedPrice, setEditedPrice] = useState(product.averagePrice.toString());
+  const [customPrice, setCustomPrice] = useState('');
 
-  const handleSave = () => {
-    const newPrice = parseFloat(editedPrice);
+  const handleSetPrice = () => {
+    const newPrice = parseFloat(customPrice);
     if (!isNaN(newPrice) && newPrice > 0) {
       const updatedProduct = {
         ...product,
-        averagePrice: newPrice,
-        leaderPrice: parseFloat((newPrice * 1.15).toFixed(2)),
+        leaderPrice: newPrice,
       };
       onSave(updatedProduct);
-      setIsEditing(false);
+      setCustomPrice('');
     }
-  };
-
-  const handleCancel = () => {
-    setEditedPrice(product.averagePrice.toString());
-    setIsEditing(false);
   };
 
   return (
@@ -121,10 +114,30 @@ export function ProductDetails({ product, onSave }: ProductDetailsProps) {
 
         <div className="text-center p-4 sm:p-5 bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-400 rounded-lg col-span-1 lg:col-span-1 shadow-sm">
           <div className="flex items-center justify-center mb-2">
-            <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-orange-700 mr-1" />
-            <p className="text-xs sm:text-sm font-semibold text-orange-700">Precio LÍDER (Reventa)</p>
+            <p className="text-xs sm:text-sm font-semibold text-orange-700">Establece tu Precio</p>
           </div>
-          <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-orange-700">${product.leaderPrice.toFixed(2)}</p>
+          {product.leaderPrice > 0 ? (
+            <p className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-orange-700">${product.leaderPrice.toFixed(2)}</p>
+          ) : (
+            <div className="flex flex-col items-center space-y-2">
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={customPrice}
+                onChange={(e) => setCustomPrice(e.target.value)}
+                placeholder="0.00"
+                className="w-32 text-2xl font-bold text-orange-700 border-2 border-orange-400 rounded px-3 py-2 text-center"
+              />
+              <button
+                onClick={handleSetPrice}
+                disabled={!customPrice || parseFloat(customPrice) <= 0}
+                className="px-4 py-2 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                Establecer Precio
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="p-4 sm:p-5 bg-white border-2 border-slate-300 rounded-lg col-span-1 lg:col-span-2">
