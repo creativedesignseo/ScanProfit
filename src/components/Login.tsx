@@ -44,10 +44,11 @@ export function Login({ onLogin }: LoginProps) {
 
           <div className="bg-baraki-yellow-light border-2 border-baraki-yellow-dark rounded-xl p-4 mb-6">
             <p className="text-center text-baraki-black font-bold text-lg mb-2">
-              Iniciar Sesión
+              Credenciales de Demo
             </p>
-            <div className="text-center text-baraki-black-light text-sm">
-              <p>Ingresa tu correo electrónico y contraseña</p>
+            <div className="text-center text-baraki-black-light text-sm space-y-1">
+              <p>Email: <span className="font-bold text-baraki-black">demo@baraki.com</span></p>
+              <p>Contraseña: <span className="font-bold text-baraki-black">baraki123</span></p>
             </div>
           </div>
 
