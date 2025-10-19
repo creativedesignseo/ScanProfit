@@ -44,11 +44,10 @@ export function Login({ onLogin }: LoginProps) {
 
           <div className="bg-baraki-yellow-light border-2 border-baraki-yellow-dark rounded-xl p-4 mb-6">
             <p className="text-center text-baraki-black font-bold text-lg mb-2">
-              Aplicación Demostrativa
+              Iniciar Sesión
             </p>
-            <div className="text-center text-baraki-black-light text-sm space-y-1">
-              <p>Usuario: <span className="font-bold text-baraki-black">demo</span></p>
-              <p>Contraseña: <span className="font-bold text-baraki-black">demo</span></p>
+            <div className="text-center text-baraki-black-light text-sm">
+              <p>Ingresa tu correo electrónico y contraseña</p>
             </div>
           </div>
 
@@ -58,19 +57,19 @@ export function Login({ onLogin }: LoginProps) {
                 htmlFor="username"
                 className="block text-sm font-semibold text-baraki-black mb-2"
               >
-                Usuario
+                Correo Electrónico
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-baraki-black-light" />
                 <input
                   id="username"
-                  type="text"
+                  type="email"
                   value={username}
                   onChange={(e) => {
                     setUsername(e.target.value);
                     setError('');
                   }}
-                  placeholder="Ingresa tu usuario"
+                  placeholder="ejemplo@correo.com"
                   className="w-full pl-10 pr-4 py-3 border-2 border-baraki-black rounded-lg focus:ring-2 focus:ring-baraki-yellow focus:border-baraki-yellow text-lg transition-all"
                   autoFocus
                 />
