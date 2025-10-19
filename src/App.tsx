@@ -1,65 +1,18 @@
-import { useState, useEffect } from 'react';
-import { Download, PackageOpen, LogOut } from 'lucide-react';
-import { Login } from './components/Login';
+import { useState } from 'react';
+import { Download, PackageOpen } from 'lucide-react';
 import { ProductScanner } from './components/ProductScanner';
 import { ProductTable } from './components/ProductTable';
 import { ProductDetails } from './components/ProductDetails';
 import { exportToCSV } from './utils/csvExport';
 import { fetchProductData, saveProduct } from './services/productService';
-import { createClient } from '@supabase/supabase-js';
 import type { Product } from './types/product';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const [scannedProducts, setScannedProducts] = useState<Product[]>([]);
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    const auth = localStorage.getItem('baraki_auth');
-    const storedUserId = localStorage.getItem('baraki_user_id');
-    if (auth === 'true' && storedUserId) {
-      setIsAuthenticated(true);
-      setUserId(storedUserId);
-    }
-  }, []);
-
-  const handleLogin = async (username: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: username,
-        password: password,
-      });
-
-      if (error || !data.user) {
-        alert('Usuario o contraseña incorrectos');
-        return;
-      }
-
-      setIsAuthenticated(true);
-      setUserId(data.user.id);
-      localStorage.setItem('baraki_auth', 'true');
-      localStorage.setItem('baraki_user_id', data.user.id);
-    } catch (error) {
-      alert('Error al iniciar sesión');
-    }
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setIsAuthenticated(false);
-    setUserId(null);
-    localStorage.removeItem('baraki_auth');
-    localStorage.removeItem('baraki_user_id');
-    setScannedProducts([]);
-    setCurrentProduct(null);
-  };
+  const userId = 'default-user';
 
   const handleScan = async (upc: string) => {
     setIsLoading(true);
@@ -96,10 +49,6 @@ function App() {
     exportToCSV(scannedProducts);
   };
 
-  if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-baraki-yellow-light to-baraki-yellow p-2 sm:p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -118,13 +67,6 @@ function App() {
                 <p className="text-xs sm:text-sm text-baraki-black-light">Analizador de Lotes</p>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-baraki-black hover:bg-baraki-black-light text-baraki-yellow font-bold px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline text-sm">Salir</span>
-            </button>
           </div>
           <p className="text-sm sm:text-base text-baraki-black-light text-center">Búsqueda rápida por UPC/EAN</p>
         </header>
@@ -134,7 +76,7 @@ function App() {
           isLoading={isLoading}
         />
 
-        {currentProduct && userId && (
+        {currentProduct && (
           <ProductDetails
             product={currentProduct}
             onSave={async (updatedProduct) => {
