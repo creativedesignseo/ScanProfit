@@ -9,7 +9,6 @@ interface CameraScannerProps {
 
 export function CameraScanner({ onScan, onClose }: CameraScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
@@ -18,7 +17,6 @@ export function CameraScanner({ onScan, onClose }: CameraScannerProps) {
 
     const startScanner = async () => {
       try {
-        setIsScanning(true);
         await scanner.start(
           { facingMode: 'environment' },
           {
@@ -33,8 +31,7 @@ export function CameraScanner({ onScan, onClose }: CameraScannerProps) {
               stopScanner();
             }
           },
-          (errorMessage) => {
-            // Error de escaneo continuo, se ignora
+          () => {
           }
         );
       } catch (err) {
@@ -47,7 +44,6 @@ export function CameraScanner({ onScan, onClose }: CameraScannerProps) {
       if (scannerRef.current && scannerRef.current.isScanning) {
         try {
           await scannerRef.current.stop();
-          setIsScanning(false);
         } catch (err) {
           console.error('Error al detener el escáner:', err);
         }

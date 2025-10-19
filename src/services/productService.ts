@@ -1,7 +1,10 @@
+import { createClient } from '@supabase/supabase-js';
 import type { Product } from '../types/product';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || import.meta.env.SUPABASE_DATABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.SUPABASE_ANON_KEY;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export async function fetchProductData(upc: string): Promise<Product | null> {
   try {
@@ -25,21 +28,96 @@ export async function fetchProductData(upc: string): Promise<Product | null> {
 
     return {
       upc: data.upc,
-      nombre: data.nombre,
-      name: data.nombre,
-      precioAmazon: data.precioAmazon,
-      amazonPrice: data.precioAmazon,
-      precioWalmart: data.precioWalmart,
-      walmartPrice: data.precioWalmart,
-      precioPromedio: data.precioPromedio,
-      averagePrice: data.precioPromedio,
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      amazonPrice: data.amazonPrice,
+      walmartPrice: data.walmartPrice,
+      averagePrice: data.averagePrice,
       leaderPrice: data.leaderPrice,
-      descripcion: data.descripcion,
-      fichaTecnica: data.fichaTecnica,
       image: data.image,
     };
   } catch (error) {
     console.error('Error fetching product data:', error);
     return null;
+  }
+}
+
+export async function saveProduct(product: Product, userId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('products')
+      .upsert({
+        upc: product.upc,
+        title: product.title,
+        description: product.description,
+        category: product.category,
+        amazon_price: product.amazonPrice,
+        walmart_price: product.walmartPrice,
+        average_price: product.averagePrice,
+        image_url: product.image,
+        scanned_by: userId,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'upc'
+      });
+
+    if (error) {
+      console.error('Error saving product:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error saving product:', error);
+    return false;
+  }
+}
+
+export async function getAllProducts(): Promise<Product[]> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching products:', error);
+      return [];
+    }
+
+    return data.map(row => ({
+      upc: row.upc,
+      title: row.title,
+      description: row.description,
+      category: row.category,
+      amazonPrice: row.amazon_price,
+      walmartPrice: row.walmart_price,
+      averagePrice: row.average_price,
+      leaderPrice: row.average_price * 1.15,
+      image: row.image_url,
+    }));
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return [];
+  }
+}
+
+export async function deleteProduct(upc: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('upc', upc);
+
+    if (error) {
+      console.error('Error deleting product:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    return false;
   }
 }

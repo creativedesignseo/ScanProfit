@@ -6,10 +6,7 @@ export function exportToCSV(products: Product[]): void {
   const headers = [
     'Nombre del Producto',
     'UPC/EAN',
-    'Marca',
     'Categoria',
-    'Peso',
-    'Origen',
     'Descripcion',
     'Precio Amazon',
     'Precio Walmart',
@@ -18,16 +15,13 @@ export function exportToCSV(products: Product[]): void {
   ];
 
   const csvData = products.map(p => [
-    `"${(p.nombre || p.name || '').replace(/"/g, '""')}"`,
+    `"${p.title.replace(/"/g, '""')}"`,
     p.upc,
-    `"${(p.fichaTecnica?.marca || 'N/A').replace(/"/g, '""')}"`,
-    `"${(p.fichaTecnica?.categoria || 'N/A').replace(/"/g, '""')}"`,
-    `"${(p.fichaTecnica?.peso || 'N/A').replace(/"/g, '""')}"`,
-    `"${(p.fichaTecnica?.origen || 'N/A').replace(/"/g, '""')}"`,
-    `"${(p.descripcion || '').replace(/"/g, '""')}"`,
-    (p.precioAmazon || p.amazonPrice || 0).toFixed(2),
-    (p.precioWalmart || p.walmartPrice || 0).toFixed(2),
-    (p.precioPromedio || p.averagePrice || 0).toFixed(2),
+    `"${p.category.replace(/"/g, '""')}"`,
+    `"${p.description.replace(/"/g, '""')}"`,
+    p.amazonPrice.toFixed(2),
+    p.walmartPrice.toFixed(2),
+    p.averagePrice.toFixed(2),
     p.leaderPrice.toFixed(2)
   ]);
 

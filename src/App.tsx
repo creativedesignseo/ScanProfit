@@ -1,43 +1,62 @@
 import { useState, useEffect } from 'react';
-import { Search, Camera, Download, Trash2, PackageOpen, BarChart3, LogOut } from 'lucide-react';
+import { Download, PackageOpen, LogOut } from 'lucide-react';
 import { Login } from './components/Login';
 import { ProductScanner } from './components/ProductScanner';
 import { ProductTable } from './components/ProductTable';
 import { ProductDetails } from './components/ProductDetails';
 import { exportToCSV } from './utils/csvExport';
-import { fetchProductData } from './services/productService';
+import { fetchProductData, saveProduct } from './services/productService';
+import { createClient } from '@supabase/supabase-js';
 import type { Product } from './types/product';
 
-const CREDENTIALS = {
-  username: 'demo',
-  password: 'demo'
-};
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [scannedProducts, setScannedProducts] = useState<Product[]>([]);
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const auth = localStorage.getItem('baraki_auth');
-    if (auth === 'true') {
+    const storedUserId = localStorage.getItem('baraki_user_id');
+    if (auth === 'true' && storedUserId) {
       setIsAuthenticated(true);
+      setUserId(storedUserId);
     }
   }, []);
 
-  const handleLogin = (username: string, password: string) => {
-    if (username === CREDENTIALS.username && password === CREDENTIALS.password) {
+  const handleLogin = async (username: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: username,
+        password: password,
+      });
+
+      if (error || !data.user) {
+        alert('Usuario o contraseña incorrectos');
+        return;
+      }
+
       setIsAuthenticated(true);
+      setUserId(data.user.id);
       localStorage.setItem('baraki_auth', 'true');
-    } else {
-      alert('Usuario o contraseña incorrectos');
+      localStorage.setItem('baraki_user_id', data.user.id);
+    } catch (error) {
+      alert('Error al iniciar sesión');
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setIsAuthenticated(false);
+    setUserId(null);
     localStorage.removeItem('baraki_auth');
+    localStorage.removeItem('baraki_user_id');
     setScannedProducts([]);
     setCurrentProduct(null);
   };
@@ -59,7 +78,7 @@ function App() {
       if (existingIndex === -1) {
         setScannedProducts([...scannedProducts, product]);
       } else {
-        alert(`El producto "${product.name}" ya está en el lote.`);
+        alert(`El producto "${product.title}" ya está en el lote.`);
       }
     } catch (error) {
       alert('Error al buscar el producto. Intenta nuevamente.');
@@ -115,8 +134,25 @@ function App() {
           isLoading={isLoading}
         />
 
-        {currentProduct && (
-          <ProductDetails product={currentProduct} />
+        {currentProduct && userId && (
+          <ProductDetails
+            product={currentProduct}
+            onSave={async (updatedProduct) => {
+              const success = await saveProduct(updatedProduct, userId);
+              if (success) {
+                setCurrentProduct(updatedProduct);
+                const existingIndex = scannedProducts.findIndex(p => p.upc === updatedProduct.upc);
+                if (existingIndex !== -1) {
+                  const updated = [...scannedProducts];
+                  updated[existingIndex] = updatedProduct;
+                  setScannedProducts(updated);
+                }
+                alert('Producto guardado exitosamente');
+              } else {
+                alert('Error al guardar el producto');
+              }
+            }}
+          />
         )}
 
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 border-4 border-baraki-black">

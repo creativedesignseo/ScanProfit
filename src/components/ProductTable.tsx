@@ -24,7 +24,7 @@ export function ProductTable({ products, onRemove }: ProductTableProps) {
           <div key={`${product.upc}-${index}`} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
             <div className="flex justify-between items-start mb-2">
               <div className="flex-1 pr-2">
-                <p className="text-sm font-bold text-slate-900 break-words">{product.nombre || product.name}</p>
+                <p className="text-sm font-bold text-slate-900 break-words">{product.title}</p>
                 <p className="text-xs text-slate-500 mt-0.5">UPC: {product.upc}</p>
               </div>
               <button
@@ -38,11 +38,11 @@ export function ProductTable({ products, onRemove }: ProductTableProps) {
             <div className="grid grid-cols-3 gap-2 mt-3">
               <div className="text-center">
                 <p className="text-xs text-slate-600 mb-0.5">Amazon</p>
-                <p className="text-sm font-bold text-green-600">${(product.precioAmazon || product.amazonPrice || 0).toFixed(2)}</p>
+                <p className="text-sm font-bold text-green-600">${product.amazonPrice.toFixed(2)}</p>
               </div>
               <div className="text-center">
                 <p className="text-xs text-slate-600 mb-0.5">Walmart</p>
-                <p className="text-sm font-bold text-blue-600">${(product.precioWalmart || product.walmartPrice || 0).toFixed(2)}</p>
+                <p className="text-sm font-bold text-blue-600">${product.walmartPrice.toFixed(2)}</p>
               </div>
               <div className="text-center bg-orange-50 rounded p-1">
                 <p className="text-xs text-orange-700 font-semibold mb-0.5">LÍDER</p>
@@ -82,19 +82,19 @@ export function ProductTable({ products, onRemove }: ProductTableProps) {
             {products.map((product, index) => (
               <tr key={`${product.upc}-${index}`} className="hover:bg-slate-50 transition-colors">
                 <td className="px-3 py-3">
-                  <div className="text-sm font-medium text-slate-900 max-w-xs truncate">{product.nombre || product.name}</div>
+                  <div className="text-sm font-medium text-slate-900 max-w-xs truncate">{product.title}</div>
                 </td>
                 <td className="px-3 py-3 whitespace-nowrap hidden lg:table-cell">
                   <div className="text-sm text-slate-600">{product.upc}</div>
                 </td>
                 <td className="px-3 py-3 whitespace-nowrap">
                   <div className="text-sm font-semibold text-green-600">
-                    ${(product.precioAmazon || product.amazonPrice || 0).toFixed(2)}
+                    ${product.amazonPrice.toFixed(2)}
                   </div>
                 </td>
                 <td className="px-3 py-3 whitespace-nowrap">
                   <div className="text-sm font-semibold text-blue-600">
-                    ${(product.precioWalmart || product.walmartPrice || 0).toFixed(2)}
+                    ${product.walmartPrice.toFixed(2)}
                   </div>
                 </td>
                 <td className="px-3 py-3 whitespace-nowrap">

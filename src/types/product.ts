@@ -1,21 +1,26 @@
 export interface Product {
   upc: string;
-  nombre: string;
-  name?: string;
-  precioAmazon: number;
-  amazonPrice?: number;
-  precioWalmart: number;
-  walmartPrice?: number;
-  precioPromedio: number;
-  averagePrice?: number;
+  title: string;
+  description: string;
+  category: string;
+  amazonPrice: number;
+  walmartPrice: number;
+  averagePrice: number;
   leaderPrice: number;
-  descripcion: string;
-  fichaTecnica: {
-    marca: string;
-    categoria: string;
-    peso: string;
-    origen: string;
-    codigo_barras: string;
-  };
   image?: string;
+}
+
+export interface ProductDB {
+  id: string;
+  upc: string;
+  title: string;
+  description: string;
+  category: string;
+  amazon_price: number;
+  walmart_price: number;
+  average_price: number;
+  image_url?: string;
+  scanned_by: string;
+  created_at: string;
+  updated_at: string;
 }
