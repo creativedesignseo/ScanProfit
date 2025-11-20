@@ -1,4 +1,4 @@
-const N8N_WEBHOOK_URL = 'https://n8n.adspubli.com/webhook-test/scan';
+const N8N_WEBHOOK_URL = 'https://n8n.adspubli.com/webhook/scan';
 
 export async function sendUpcToN8n(upc: string): Promise<boolean> {
   try {
