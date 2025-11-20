@@ -5,6 +5,9 @@ import { sendUpcToN8n } from './n8nService';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.adspubli.com/webhook-test/scan';
+const N8N_WEBHOOK_TOKEN = import.meta.env.VITE_N8N_WEBHOOK_TOKEN || '';
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export async function fetchProductData(upc: string): Promise<Product | null> {
@@ -41,6 +44,49 @@ export async function fetchProductData(upc: string): Promise<Product | null> {
     };
   } catch (error) {
     console.error('Error fetching product data:', error);
+    return null;
+  }
+}
+
+// New: fetch product data via n8n webhook
+export async function fetchProductDataViaN8n(upc: string): Promise<Product | null> {
+  try {
+    if (!N8N_WEBHOOK_URL) {
+      console.error('N8N webhook URL not configured.');
+      return null;
+    }
+
+    const headers: Record<string,string> = { 'Content-Type': 'application/json' };
+    if (N8N_WEBHOOK_TOKEN) headers['X-Webhook-Token'] = N8N_WEBHOOK_TOKEN;
+
+    const response = await fetch(N8N_WEBHOOK_URL, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ upc }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      throw new Error(`n8n responded ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Normalize response to your Product type. Adjust fields if your n8n flow returns different keys.
+    return {
+      upc: data.upc || upc,
+      title: data.title || data.titulo || '',
+      description: data.description || '',
+      category: data.category || '',
+      amazonPrice: data.amazonPrice || 0,
+      walmartPrice: data.walmartPrice || 0,
+      averagePrice: data.averagePrice || 0,
+      leaderPrice: data.leaderPrice || 0,
+      expirationDate: data.expirationDate || undefined,
+      image: data.image || data.images?.[0] || '',
+    };
+  } catch (err) {
+    console.error('Error fetching from n8n:', err);
     return null;
   }
 }

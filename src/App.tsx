@@ -4,7 +4,7 @@ import { ProductScanner } from './components/ProductScanner';
 import { ProductTable } from './components/ProductTable';
 import { ProductDetails } from './components/ProductDetails';
 import { exportToCSV } from './utils/csvExport';
-import { fetchProductData, saveProduct } from './services/productService';
+import { fetchProductData, fetchProductDataViaN8n, saveProduct } from './services/productService';
 import type { Product } from './types/product';
 
 
@@ -17,7 +17,11 @@ function App() {
   const handleScan = async (upc: string) => {
     setIsLoading(true);
     try {
-      const product = await fetchProductData(upc);
+      // First try via n8n webhook (or fallback to existing fetchProductData)
+      let product = await fetchProductDataViaN8n(upc);
+      if (!product) {
+        product = await fetchProductData(upc);
+      }
 
       if (!product) {
         alert(`Producto con código ${upc} no encontrado. Verifica el código.`);
