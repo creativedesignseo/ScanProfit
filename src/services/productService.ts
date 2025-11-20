@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Product } from '../types/product';
+import { sendUpcToN8n } from './n8nService';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -70,29 +71,11 @@ export async function saveProduct(product: Product, userId: string): Promise<boo
       return false;
     }
 
-    // Sync to Google Sheets
+    // Send UPC to n8n (which will sync to Google Sheets)
     try {
-      const syncUrl = `${SUPABASE_URL}/functions/v1/sync-to-sheets`;
-      await fetch(syncUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: product.title,
-          upc: product.upc,
-          amazonPrice: product.amazonPrice,
-          walmartPrice: product.walmartPrice,
-          averagePrice: product.averagePrice,
-          leaderPrice: product.leaderPrice,
-          expirationDate: product.expirationDate,
-          scannedBy: userId,
-          timestamp: new Date().toISOString(),
-        }),
-      });
+      await sendUpcToN8n(product.upc);
     } catch (syncError) {
-      console.error('Error syncing to Google Sheets:', syncError);
+      console.error('Error sending to n8n:', syncError);
     }
 
     return true;
