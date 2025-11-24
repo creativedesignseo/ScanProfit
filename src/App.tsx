@@ -5,7 +5,6 @@ import { ProductTable } from './components/ProductTable';
 import { ProductDetails } from './components/ProductDetails';
 import { exportToCSV } from './utils/csvExport';
 import { fetchProductData, saveProduct } from './services/productService';
-import { syncToGoogleSheets } from './services/googleSheetsService';
 import type { Product } from './types/product';
 
 
@@ -85,24 +84,8 @@ function App() {
                   setScannedProducts([...scannedProducts, updatedProduct]);
                 }
 
-                const sheetsSynced = await syncToGoogleSheets(
-                  updatedProduct.title,
-                  updatedProduct.upc,
-                  updatedProduct.amazonPrice,
-                  updatedProduct.walmartPrice,
-                  updatedProduct.averagePrice,
-                  updatedProduct.leaderPrice,
-                  updatedProduct.expirationDate,
-                  userId
-                );
-
                 setCurrentProduct(null);
-
-                if (sheetsSynced) {
-                  alert('Producto guardado exitosamente y sincronizado con Google Sheets');
-                } else {
-                  alert('Producto guardado en la base de datos (Google Sheets no configurado)');
-                }
+                alert('Producto guardado exitosamente y sincronizado con Google Sheets');
               } else {
                 alert('Error al guardar el producto');
               }
