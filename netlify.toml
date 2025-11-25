@@ -1,0 +1,37 @@
+# Netlify Configuration for ScanProfit
+# This app uses Supabase Edge Functions which must be deployed separately to Supabase
+
+[build]
+  # Build command to compile the React/Vite app
+  command = "npm run build"
+  
+  # Directory where the built files are located
+  publish = "dist"
+  
+  # Node.js version
+  [build.environment]
+    NODE_VERSION = "18"
+
+# Redirect rules for SPA (Single Page Application)
+# This ensures all routes are handled by the React Router
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  
+# Headers for security and CORS (if needed)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Environment variables needed (set these in Netlify dashboard):
+# VITE_SUPABASE_URL - Your Supabase project URL
+# VITE_SUPABASE_ANON_KEY - Your Supabase anonymous key
+#
+# Note: The Supabase Edge Function at supabase/functions/product-lookup/
+# must be deployed to Supabase separately using the Supabase CLI:
+#   supabase functions deploy product-lookup
